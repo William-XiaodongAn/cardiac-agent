@@ -273,10 +273,33 @@ function march(){
     env.time += env.dt ;
 }
 
+var voltageSaved = false;
+
+function saveVoltage(saveTime){
+    if (env.time >= saveTime && !voltageSaved) {
+        var canvas2 = document.getElementById('canvas_2');
+        var link = document.createElement('a');
+        link.download = 'voltage_trace_' + saveTime + 'ms.png';
+        link.href = canvas2.toDataURL();
+        link.click();
+        voltageSaved = true;
+        console.log('Voltage trace saved at ' + saveTime + 'ms');
+    }
+}
+function pacing(period){
+    if (env.time % period < env.dt) {
+        click.uniforms.clickPosition.value = [0.1, 0.1] ;
+        click.render() ;
+        clickCopy.render() ;
+    }
+}
+
 function run(){
     if (env.running){
         for(var i = 0 ; i<env.skip ; i++){
             march() ;
+            pacing(200) ;
+            saveVoltage(1000) ;  // Saves canvas_2 at 1000ms
             env.usgn.update(env.time) ;
         }
     }
