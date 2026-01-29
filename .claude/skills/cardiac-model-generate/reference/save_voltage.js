@@ -3,15 +3,31 @@
 
 var voltageSaved = false;
 
-function saveVoltage(saveTime){
+function saveVoltage(saveTime) {
     if (env.time >= saveTime && !voltageSaved) {
         var canvas2 = document.getElementById('canvas_2');
+        
+        // 1. Create a temporary canvas of the same size
+        var tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas2.width;
+        tempCanvas.height = canvas2.height;
+        var tempCtx = tempCanvas.getContext('2d');
+
+        // 2. Fill the temporary canvas with white
+        tempCtx.fillStyle = 'white';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+        // 3. Draw your original canvas content on top of the white background
+        tempCtx.drawImage(canvas2, 0, 0);
+
+        // 4. Save the temporary canvas instead
         var link = document.createElement('a');
         link.download = 'voltage_trace_' + saveTime + 'ms.png';
-        link.href = canvas2.toDataURL();
+        link.href = tempCanvas.toDataURL('image/png'); // Explicitly set PNG
         link.click();
+
         voltageSaved = true;
-        console.log('Voltage trace saved at ' + saveTime + 'ms');
+        console.log('Voltage trace saved at ' + saveTime + 'ms with white background');
     }
 }
 

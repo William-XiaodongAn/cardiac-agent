@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python test_simulation.py:*)",
+      "Bash(pip install:*)",
+      "Bash(playwright install:*)",
+      "Bash(python:*)",
+      "Bash(copy:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}

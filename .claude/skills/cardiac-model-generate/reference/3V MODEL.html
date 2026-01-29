@@ -62,9 +62,10 @@ void main() {
     color.r = 0. ;
 	color.g = 1. ;
 	color.b = 1. ;
-    
+
 	color1 = color ;
     color2 = color ;
+
 
     return ;
 }
@@ -209,6 +210,7 @@ init.render();
 // post processing .......................................................
 var plot = new Abubu.Plot2D({
     target : fcolor,
+    prevTarget: scolor,
     channel : 'r',
     minValue : -1.0 ,
     maxValue : 1.0 ,

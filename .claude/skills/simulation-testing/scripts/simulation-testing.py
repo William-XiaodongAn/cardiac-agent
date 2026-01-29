@@ -3,22 +3,31 @@ import time
 import os
 
 # Configuration
-file_path = r"D:\Documents\GitHub\cardiac-agent\outputs\cardiac_model.html"
-output_dir = r"D:\Documents\GitHub\cardiac-agent\outputs"
-run_time = 15  # seconds to run simulation
+file_path = r"C:\Users\xan37\OneDrive - Georgia Institute of Technology\Documents\GitHub\cardiac-agent\outputs\cardiac_model.html"
+output_dir = r"C:\Users\xan37\OneDrive - Georgia Institute of Technology\Documents\GitHub\cardiac-agent\outputs"
+run_time = 20  # seconds to run simulation (enough for 3000ms simulation time)
 
 with sync_playwright() as p:
     browser = p.chromium.launch(
         headless=False,
         args=['--enable-webgl', '--use-gl=angle']
     )
-    context = browser.new_context(accept_downloads=True)
+    context = browser.new_context(
+        viewport={'width': 1920, 'height': 1080}, # Set to a standard widescreen size
+        accept_downloads=True
+    )
     page = context.new_page()
 
     # Open the cardiac model HTML file
     page.goto(f"file:///{file_path.replace(chr(92), '/')}")
     page.wait_for_load_state('networkidle')
-    print("Page loaded, simulation starting...")
+    print("Page loaded...")
+
+    # Click the "running" checkbox to start the simulation
+    time.sleep(1)  # Wait for GUI to initialize
+    # Find and click the running checkbox in the Abubu GUI
+    page.evaluate("env.running = true")
+    print("Simulation started!")
 
     # Wait for the auto-download from saveVoltage()
     print(f"Running simulation for {run_time} seconds, waiting for voltage trace download...")
