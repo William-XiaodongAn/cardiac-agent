@@ -7,7 +7,8 @@
       "Bash(python:*)",
       "Bash(copy:*)",
       "Bash(powershell -Command:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cmd /c copy \"D:\\\\Documents\\\\GitHub\\\\cardiac-agent\\\\.claude\\\\skills\\\\cardiac-model-generate\\\\reference\\\\Abubu.js\" \"D:\\\\Documents\\\\GitHub\\\\cardiac-agent\\\\outputs\\\\Abubu.js\")"
     ]
   }
 }

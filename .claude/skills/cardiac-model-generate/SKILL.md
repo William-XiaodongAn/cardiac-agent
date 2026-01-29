@@ -14,8 +14,9 @@ Generate FK 3V cardiac model simulations using the exact reference code.
 **-** Use the EXACT code from **`/reference/3V_MODEL.html`\*\*
 **-** No modifications needed
 
-**2.\*\***Species/Drug-Specific Request\***\*:
+**2.\*\***Species/Parameter change Request\***\*:
 **-** Use the EXACT code from reference file
+**-** DO NOT change other parameters like dt/ds/texture size
 **-** ONLY modify these 14 parameters in the shader:
 `     tau_pv, tau_v1, tau_v2, tau_pw, tau_mw, tau_d,       tau_0, tau_r, tau_si, K, V_csi, V_c, V_v, C_m     `
 **-** Search literature or use general knowledge for appropriate parameter values

@@ -77,7 +77,6 @@ void main() {
 }
 </script>
 
-
 <script id='initS1S2' type='shader'>#version 300 es
 precision highp float ;
 precision highp int ;
@@ -140,20 +139,20 @@ void main() {
 
     float dudt = diffCoef*laplacian ;
 
-    // Original 3V Model Constants and Logic ---------------------------
-    float tau_pv=7.99;
-    float tau_v1=9.8;
-    float tau_v2=312.5;
-    float tau_pw=870.0;
-    float tau_mw=41.0;
-    float tau_d=0.5714;
-    float tau_0=12.5;
-    float tau_r=33.83;
-    float tau_si=29.0;
+    // Fenton et al. 2002 - Parameter Set 1 with tau_d=0.36 for Fig 1D (hypocycloidal)
+    float tau_pv=3.33;
+    float tau_v1=19.6;
+    float tau_v2=1000.0;
+    float tau_pw=667.0;
+    float tau_mw=11.0;
+    float tau_d=0.36;
+    float tau_0=8.3;
+    float tau_r=50.0;
+    float tau_si=45.0;
     float K=10.0;
-    float V_csi=0.861;
+    float V_csi=0.85;
     float V_c=0.13;
-    float V_v=0.04;
+    float V_v=0.055;
     float C_m=1.0;
 
     float T0=37.0;
@@ -210,14 +209,14 @@ canvas_2.style.top = "10px";
 canvas_2.style.position = "absolute";
 
 var env = {
-        dt : 0.025 ,
+        dt : 0.25 ,
         diffCoef :0.001,
         time : 0 ,
-		Lx : 10.,
-		Ly : 10.,
+		Lx : 6.3,
+		Ly : 6.3,
         running : false ,
-		width : 512,
-		height : 512,
+		width : 256,
+		height : 256,
 		clickRadius : 0.06 ,
 		clickPosition  : [0.,0.] ,
         Temp : 37.0,
@@ -251,7 +250,17 @@ var initS1S2 = new Abubu.Solver( {
 
 var turn_red_first = false;
 var turn_red_second = false;
-var measurePoint = 525312;
+var measurePoint = 131584;  // For 256x256 texture, center point
+function S1S2Init(){
+    if (!turn_red_first && fcolor.value[measurePoint] >= 0.9){
+        turn_red_first = true;
+    }
+    if (turn_red_first && !turn_red_second && fcolor.value[measurePoint] < 0.1){
+        turn_red_second = true;
+        initS1S2.render() ;
+        clickCopy.render() ;
+    }
+}
 // added lines for S1-S2 initialization
 
 // post processing .......................................................
@@ -322,18 +331,17 @@ function march(){
     env.time += env.dt ;
 }
 
-// added lines for S1-S2 initialization
-function S1S2Init(){
-    if (!turn_red_first && fcolor.value[measurePoint] >= 0.9){
-        turn_red_first = true;
-    }
-    if (turn_red_first && !turn_red_second && fcolor.value[measurePoint] < 0.1){
-        turn_red_second = true;
-        initS1S2.render() ;
-        clickCopy.render() ;
+// Plot Tip Function
+TiptVisiblity = false ;
+function plotTip(startTime,endTime){
+    if (env.time >= startTime && env.time <= endTime && !TiptVisiblity) {
+        TiptVisiblity = true ;
+        plot.setTiptVisiblity(TiptVisiblity) ;
+    } else if (env.time > endTime || env.time < startTime) {
+        TiptVisiblity = false;
+        plot.setTiptVisiblity(TiptVisiblity) ;
     }
 }
-// added lines for S1-S2 initialization
 
 j=0;
 function run(){
@@ -343,6 +351,7 @@ function run(){
             if (j % 10 == 0) {
                 S1S2Init(); // added lines for S1-S2 initialization
             }
+            plotTip(1000,10000) ;  // Show tip from 1000ms to 10000ms
             env.usgn.update(env.time) ;
             j += 1;
         }
@@ -378,13 +387,12 @@ new Abubu.MouseListener({
 
 env.initialize = function(){
     env.time = 0 ;
+    turn_red_first = false;
+    turn_red_second = false;
     init.render() ;
     splot.init() ;
     env.usgn.init(0) ;
     plot.init() ;
-    // Reset S1-S2 variables
-    turn_red_first = false;
-    turn_red_second = false;
 }
 
 function addToGui(guiElemenent, obj, paramList, solverList){
