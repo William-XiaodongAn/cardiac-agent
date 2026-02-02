@@ -1,0 +1,6 @@
+{
+  "tools": {
+    "directories": ["./.gemini/skills"],
+    "auto_discovery": false
+  }
+}
