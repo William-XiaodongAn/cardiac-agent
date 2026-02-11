@@ -84,14 +84,14 @@ Given the discretization of the coefficient function $a(x)$ of shape [batch_size
 
 
 fk_description = '''
-The PDE system is a 2D reaction-diffusion model (specifically the Bueno-Orovio-Cherry-Fenton model), describing the evolution of the normalized transmembrane potential $u(t, x)$ and two gating variables $v(t, x)$ and $w(t, x)$:
+The PDE system is a 2D reaction-diffusion model, describing the evolution of the normalized transmembrane potential $u(t, x)$ and two gating variables $v(t, x)$ and $w(t, x)$:
 
 \\[
-\\begin{cases} 
-\\partial_t u(t, x) = \\diffCoef \\nabla^2 u(t, x) - \\frac{I_{fi}(u, v) + I_{so}(u) + I_{si}(u, w)}{C_m} \\\\
-\\partial_t v(t, x) = \\begin{cases} \\frac{1-v(t, x)}{\\tau_{mv}(u)} & u(t, x) < V_c \\\\ \\frac{-v(t, x)}{\\tau_{pv}} & u(t, x) \\ge V_c \\end{cases} \\\\
-\\partial_t w(t, x) = \\begin{cases} \\frac{1-w(t, x)}{\\tau_{mw}} & u(t, x) < V_c \\\\ \\frac{-w(t, x)}{\\tau_{pw}} & u(t, x) \\ge V_c \\end{cases}
-\\end{cases}
+\\begin{{cases}} 
+\\partial_t u(t, x) = diffCoef \\nabla^2 u(t, x) - \\frac{I_{fi}(u, v) + I_{so}(u) + I_{si}(u, w)}{C_m} \\\\
+\\partial_t v(t, x) =\\frac{1-v(t, x)}{\\tau_{mv}(u)} & u(t, x) < V_c \\\\ \\frac{-v(t, x)}{\\tau_{pv}} & u(t, x) \\ge V_c  \\\\
+\\partial_t w(t, x) =\\frac{1-w(t, x)}{\\tau_{mw}} & u(t, x) < V_c \\\\ \\frac{-w(t, x)}{\\tau_{pw}} & u(t, x) \\ge V_c 
+\\end{{cases}}
 \\]
 
 where $x \in (0,1)^2$ and $t \in (0,T]$. The ionic currents are functions of the state variables:
@@ -104,7 +104,7 @@ where $H(\cdot)$ is the Heaviside step function. In our task, we assume No-Flux 
 Given the discretization of the $u(0, x), v(0, x), w(0, x)$ each of shape [batch_size, N, N] where $N$ is the number of spatial points, you need to implement a solver to predict the state variables for the specified subsequent time steps ($t = t_1, \\ldots, t_T$).The solver outputs $u(0, x), v(0, x), w(0, x)$, each of shape [batch_size, T+1, N] (with the initial time frame and the subsequent steps). Note that although the required time steps are specified, you should consider using smaller time steps internally to obtain more stable simulation.
 
 In particular, your code should be tailored to the following parameters:
-* **Diffusion:** $\\diffCoef = 0.001$, $C_m = 1.0$
+* **Diffusion:** $diffCoef = 0.001$, $C_m = 1.0$
 * **Time Constants:** $\\tau_{pv}=7.99, \\tau_{v1}=9.8, \\tau_{v2}=312.5, \\tau_{pw}=870.0, \\tau_{mw}=41.0, \\tau_{d}={fk_taud}, \\tau_{0}=12.5, \\tau_{r}=33.83, \\tau_{si}=29.0$
 * **Thresholds/Constants:** $k=10.0, V_{csi}=0.861, V_c=0.13, V_v=0.04$
 '''
