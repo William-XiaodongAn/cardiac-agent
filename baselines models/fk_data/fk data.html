@@ -128,27 +128,16 @@ void main() {
     float V_v=0.04;
     float C_m=1.0;
 
-    float T0=37.0;
-    float q10v=1.5;
-    float q10w=2.45;
-    float phiv = q10v;
-    float phiw = q10w;
-
     float p = step(V_c, u) ;
     float q = step(V_v, u) ;
 
     float tau_mv = (1.0-q)*tau_v1   +  q*tau_v2 ;
     float tn = tanh(K*(u-V_csi));
 
-    //Rush-Larsen for gating variables
-    //v = (1.0-p)*(1.0-(1.0-v)*exp(-phiv*dt/tau_mv)) + p*v*exp(-phiv*dt/tau_pv);
-    //w = (1.0-p)*(1.0-(1.0-w)*exp(-phiw*dt/tau_mw)) + p*w*exp(-phiw*dt/tau_pw);
-
     float dv2dt  = (1.0-p)*(1.0-v)/tau_mv - p*v/tau_pv ;
     float dw2dt  = (1.0-p)*(1.0-w)/tau_mw - p*w/tau_pw ;
 
-    v += dv2dt*dt ;
-    w += dw2dt*dt ;
+
 
     float Ifi  = (-v*p*(u - V_c)*(1.0-u)/tau_d) ;
     float Iso  = (u*(1.0  - p )/tau_0 + p/tau_r) ;
@@ -157,6 +146,8 @@ void main() {
     dudt  -= (Ifi+Iso+Isi)/C_m ;
 
     u += dt*dudt;
+    v += dv2dt*dt ;
+    w += dw2dt*dt ;
 
     ocolor = color ;
     return ;
@@ -192,7 +183,7 @@ var env = {
 		clickRadius : 0.06 ,
 		clickPosition  : [0.,0.] ,
         Temp : 37.0,
-		skip : 40,
+		skip : 1,
   } ;
 // ---------------------------------------------------------------
 
@@ -323,7 +314,7 @@ function run() {
             // --- Recording Logic Start ---
             if (env.isRecording) {
                 if (env.time >= env.nextRecordTime) {
-                    var fileName = "sim_data_" + env.time.toFixed(2) + ".csv";
+                    var fileName = "sim_data_" + env.time.toFixed(5) + ".csv";
                     env.saveCsvFile(fileName);
                     
                     // Set next capture for 10 units of simulation time later
