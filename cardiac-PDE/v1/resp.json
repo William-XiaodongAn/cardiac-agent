@@ -1,18 +1,34 @@
-```json
+
 {
-  "pde_description": "\\begin{cases} \\partial_t u = D \\nabla^2 u - \\frac{I_{fi}(u, v) + I_{so}(u) + I_{si}(u, w)}{C_m} \\\\ \\partial_t v = \\begin{cases} \\frac{1-v}{\\tau_{mv}(u)} & u < V_c \\\\ \\frac{-v}{\\tau_{pv}} & u \\ge V_c \\end{cases} \\\\ \\partial_t w = \\begin{cases} \\frac{1-w}{\\tau_{mw}} & u < V_c \\\\ \\frac{-w}{\\tau_{pw}} & u \\ge V_c \\end{cases} \\end{cases} \\\\ \\text{where currents are:} \\\\ I_{fi}(u, v) = \\frac{-v H(u - V_c) (u - V_c) (1 - u)}{\\tau_d} \\\\ I_{so}(u) = \\frac{u(1 - H(u - V_c))}{\\tau_0} + \\frac{H(u - V_c)}{\\tau_r} \\\\ I_{si}(u, w) = \\frac{-w(1 + \\tanh(k(u - V_{csi})))}{2\\tau_{si}}",
+  "pde_description": "\\begin{cases} \\partial_t u = D \\nabla^2 u - \\frac{I_{fi}(u, v) + I_{so}(u) + I_{si}(u, w)}{C_m} \\\\ \\partial_t v = \\begin{cases} \\frac{1-v}{\\tau_{mv}(u)} & u < V_c \\\\ \\frac{-v}{\\tau_{pv}} & u \\ge V_c \\end{cases} \\\\ \\partial_t w = \\begin{cases} \\frac{1-w}{\\tau_{mw}} & u < V_c \\\\ \\frac{-w}{\\tau_{pw}} & u \\ge V_c \\end{cases} \\end{cases} \\\\ \\text{where:} \\\\ I_{fi}(u, v) = \\frac{-v H(u - V_c) (u - V_c) (1 - u)}{\\tau_d} \\\\ I_{so}(u) = \\frac{u(1 - H(u - V_c))}{\\tau_0} + \\frac{H(u - V_c)}{\\tau_r} \\\\ I_{si}(u, w) = \\frac{-w(1 + \\tanh(k(u - V_{csi})))}{2\\tau_{si}} \\\\ \\tau_{mv}(u) = (1-H(u-V_v))\\tau_{v1} + H(u-V_v)\\tau_{v2}",
   "number_of_state_variables": 3,
   "texture_size": 512,
   "spatial_step": 0.0390625,
   "domain_size": 20.0,
   "temporal_step": 0.025,
   "time_horizon": 100.0,
-  "boundary_conditions": "Neumann (No-Flux)",
+  "boundary_conditions": "No-Flux (Neumann)",
   "initial_conditions": {
-    "u": "Provided as input data array",
-    "v": "Provided as input data array",
-    "w": "Provided as input data array"
+    "u": "Provided as input data",
+    "v": "Provided as input data",
+    "w": "Provided as input data"
   },
-  "notes": "Model Parameters: D = 0.001, C_m = 1.0, tau_pv=7.99, tau_v1=9.8, tau_v2=312.5, tau_pw=870.0, tau_mw=41.0, tau_0=12.5, tau_r=33.83, tau_si=29.0, k=10.0, V_csi=0.861, V_c=0.13, V_v=0.04, tau_d=0.5714. Use 2nd order central differences for spatial discretization. Consider smaller internal time-stepping for stability."
+  "parameters": {
+    "D": 0.001,
+    "C_m": 1.0,
+    "tau_pv": 7.99,
+    "tau_v1": 9.8,
+    "tau_v2": 312.5,
+    "tau_pw": 870.0,
+    "tau_mw": 41.0,
+    "tau_0": 12.5,
+    "tau_r": 33.83,
+    "tau_si": 29.0,
+    "k": 10.0,
+    "V_csi": 0.861,
+    "V_c": 0.13,
+    "V_v": 0.04,
+    "tau_d": 0.5714
+  },
+  "notes": "Use 2nd order central differences for the spatial discretization. Enforce boundary conditions at every time step. To maintain stability, internal time-stepping smaller than the required output intervals should be considered. The definition for tau_mv(u) was inferred from the provided parameters as it was not explicitly defined in the PDE system."
 }
-```
