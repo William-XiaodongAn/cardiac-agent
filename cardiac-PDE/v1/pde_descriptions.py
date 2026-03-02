@@ -1,5 +1,7 @@
 fk_description = '''
 The PDE system is a 2D reaction-diffusion model, describing the evolution of the normalized transmembrane potential $u(t, x)$ and two gating variables $v(t, x)$ and $w(t, x)$:
+
+\\begin{{equation}}
 \\begin{{cases}} 
 \\partial_t u(t, x) = D \\nabla^2 u(t, x) - \\frac{{I_{{fi}}(u, v) + I_{{so}}(u) + I_{{si}}(u, w)}}{{C_m}} \\\\
 \\partial_t v(t, x) = 
@@ -11,18 +13,22 @@ The PDE system is a 2D reaction-diffusion model, describing the evolution of the
     \\begin{{cases}} 
     \\frac{{1-w(t, x)}}{{\\tau_{{mw}}}} & u(t, x) < V_c \\\\ 
     \\frac{{-w(t, x)}}{{\\tau_{{pw}}}} & u(t, x) \\ge V_c 
+    \\end{{cases}}\\\\
+    
+    I_{{fi}}(u, v) = \\frac{{-v(t, x) \\cdot H(u(t, x) - V_c) \\cdot (u(t, x) - V_c) \\cdot (1 - u(t, x))}}{{\\tau_d}}
+\\\\
+     I_{{so}}(u) = \\frac{{u(t, x)(1 - H(u(t, x) - V_c))}}{{\\tau_0}} + \\frac{{H(u(t, x) - V_c)}}{{\\tau_r}}
+\\\\
+     I_{{si}}(u, w) = \\frac{{-w(t, x)(1 + \\tanh(k(u(t, x) - V_{{csi}})))}}{{2\\tau_{{si}}}}\\\\
+     H(x) = 
+    \\begin{{cases}} 
+    0 & x < 0 \\\\
+    1 & x \\ge 0 
     \\end{{cases}}
 \\end{{cases}}
 \\end{{equation}}
 
-where $x \\in (0,1)^2$ and $t \\in (0,T]$. The ionic currents are functions of the state variables:
-\\begin{{itemize}}
-    \\item $I_{{fi}}(u, v) = \\frac{{-v(t, x) \\cdot H(u(t, x) - V_c) \\cdot (u(t, x) - V_c) \\cdot (1 - u(t, x))}}{{\\tau_d}}$
-    \\item $I_{{so}}(u) = \\frac{{u(t, x)(1 - H(u(t, x) - V_c))}}{{\\tau_0}} + \\frac{{H(u(t, x) - V_c)}}{{\\tau_r}}$
-    \\item $I_{{si}}(u, w) = \\frac{{-w(t, x)(1 + \\tanh(k(u(t, x) - V_{{csi}})))}}{{2\\tau_{{si}}}}$
-\\end{{itemize}}
-
-where $H(\\cdot)$ is the Heaviside step function. In our task, we assume No-Flux (Neumann) boundary conditions. The spatial domain is $\\Omega = [-10,10]$.
+where $x \\in (0,1)^2$ and $t \\in (0,T]$. In our task, we assume No-Flux (Neumann) boundary conditions. The spatial domain is $\\Omega = [-10,10]$.
 
 Given the discretization of $u(0, x), v(0, x), w(0, x)$ each of shape $[batch\\_size, N, N]$ where $N$ is the number of spatial points, you need to implement a solver to predict the state variables for the specified subsequent time steps ($t = t_1, \\dots, t_T$). The solver outputs $u, v, w$, each of shape $[batch\\_size, T+1, N]$ (including the initial time frame and subsequent steps). 
 

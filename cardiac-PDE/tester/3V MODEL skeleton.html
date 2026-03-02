@@ -69,98 +69,93 @@ void main() {
 </script>
 
 <script id='march' type='shader'>#version 300 es
-    precision highp float;
-    precision highp int;
-    
-    uniform sampler2D   inTexture;
-    uniform float       dt, D, dx, dy;
-    
-    in vec2 cc, pixPos ;
-    
-    layout (location = 0) out vec4 ocolor ;
-    
-    #define u       color.r
-    #define v       color.g
-    #define w       color.b
-    
-    const float tau_pv = 7.99;
-    const float tau_v1 = 9.8;
-    const float tau_v2 = 312.5;
-    const float tau_pw = 870.0;
-    const float tau_mw = 41.0;
-    const float tau_d  = 0.5714;
-    const float tau_0  = 12.5;
-    const float tau_r  = 33.83;
-    const float tau_si = 29.0;
-    const float K      = 10.0;
-    const float V_csi  = 0.861;
-    const float V_c = 0.13; 
-    const float V_v = 0.04;
-    const float C_m    = 1.0;
-    
-    
-    // Helper function for Heaviside step function
-    float H(float x) {
-        return step(x, 0.0);
-    }
-    
-    // Helper function to calculate the derivative of u with respect to time
-    void dudt_laplacian() {
-        vec2  size  = vec2(textureSize(inTexture, 0)) ;
-        vec2 ii = vec2(1., 0.) / size;
-        vec2 jj = vec2(0., 1.) / size;
-    
-        // Read the color of the pixel
-        vec4 color = texture(inTexture, cc);
-    
-        // Standard Laplacian calculation
-        float laplacian = (
-            texture(inTexture, cc + ii).r +
-            texture(inTexture, cc - ii).r +
-            texture(inTexture, cc + jj).r +
-            texture(inTexture, cc - jj).r -
-            4.0 * u
-        ) / (dx*dx);
-    
-        dudt = D * laplacian;
-    }
-    
-    // Helper function to calculate the derivative of v with respect to time
-    void dudt_v() {
-        float v1 = tau_v1 * pow(1. - v, tau_v2);
-        float v2 = tau_v2 * pow(v, tau_v2);
-        
-        float I_fi = -v * H(u - V_c) * (u - V_c) * (1.0 - u) / tau_d;
-        float I_so = u * (1.0 - H(u - V_c)) / tau_0 + H(u - V_c) / tau_r;
-    
-        dudt = v1 + v2 + I_fi + I_so;
-    }
-    
-    // Helper function to calculate the derivative of w with respect to time
-    void dudt_w() {
-        float w1 = tau_mw * pow(1.0 - w, tau_mw);
-        float w2 = tau_pw * pow(w, tau_mw);
-    
-        float I_si = -w * (1.0 + tanh(K * (u - V_csi))) / (2.0 * tau_si);
-    
-        dudt = w1 + w2 + I_si;
-    }
-    
-    // Main body of the shader
-    void main() {
-        vec2  size  = vec2(textureSize(inTexture, 0));
-        
-        // Calculate the derivative of u with respect to time using Laplacian
-        dudt_laplacian();
-    
-        // Calculate the derivative of v with respect to time
-        dudt_v();
-    
-        // Calculate the derivative of w with respect to time
-        dudt_w();
-    
-        ocolor = vec4(u, v, w, 1.0);
-    }
+precision highp float ;
+precision highp int ;
+
+uniform sampler2D   inTexture ;
+uniform float       dt, diffCoef, currtime, Lx, Ly,Temp;
+
+in vec2 cc, pixPos ;
+
+layout (location = 0) out vec4 ocolor ;
+
+#define u       color.r
+#define v       color.g
+#define w       color.b
+
+// Main body of the shader
+void main() {
+    vec2  size  = vec2(textureSize(inTexture, 0)) ;
+    float dx    = Lx/size.x ;
+    float dy    = Ly/size.y ;
+
+    vec2 ii = vec2(1.,0.)/size ;
+    vec2 jj = vec2(0.,1.)/size ;
+
+    // read the color of the pixel .......................................
+    vec4 color = texture( inTexture , cc ) ;
+
+    // Standard Laplacian calculation (Replaces the LR/UD/E-field map logic)
+    float laplacian = (
+        texture(inTexture, cc + ii).r + 
+        texture(inTexture, cc - ii).r + 
+        texture(inTexture, cc + jj).r + 
+        texture(inTexture, cc - jj).r - 
+        4.0 * u
+    ) / (dx*dx) ;
+
+    float dudt = diffCoef*laplacian ;
+
+    // Original 3V Model Constants and Logic ---------------------------
+    float tau_pv=7.99;
+    float tau_v1=9.8;
+    float tau_v2=312.5;
+    float tau_pw=870.0;
+    float tau_mw=41.0;
+    float tau_d=0.5714;
+    float tau_0=12.5;
+    float tau_r=33.83;
+    float tau_si=29.0;
+    float K=10.0;
+    float V_csi=0.861;
+    float V_c=0.13;
+    float V_v=0.04;
+    float C_m=1.0;
+
+    float T0=37.0;
+    float q10v=1.5;
+    float q10w=2.45;
+    float betafi=0.065;
+    float betaso=0.008;
+    float betasi=0.008;
+    float phiv = pow(q10v,(Temp-T0)/10.0);
+    float phiw = pow(q10w,(Temp-T0)/10.0);
+    float etafi = 1.0+betafi*(Temp-T0);
+    float etaso = 1.0+betaso*(Temp-T0);
+    float etasi = 1.0+betasi*(Temp-T0);
+
+    float p = step(V_c, u) ;
+    float q = step(V_v, u) ;
+
+    float tau_mv = (1.0-q)*tau_v1   +  q*tau_v2 ;
+    float tn = tanh(K*(u-V_csi));
+
+    //Rush-Larsen for gating variables
+    v = (1.0-p)*(1.0-(1.0-v)*exp(-phiv*dt/tau_mv)) + p*v*exp(-phiv*dt/tau_pv);
+    w = (1.0-p)*(1.0-(1.0-w)*exp(-phiw*dt/tau_mw)) + p*w*exp(-phiw*dt/tau_pw);
+
+    float Ifi  = etafi*(-v*p*(u - V_c)*(1.0-u)/tau_d) ;
+    float Iso  = etaso*(u*(1.0  - p )/tau_0 + p/tau_r) ;
+    float Isi  = etasi*(-w*(1.0  + tn) /(2.0*tau_si)) ;
+
+    dudt  -= (Ifi+Iso+Isi)/C_m ;
+
+    u += dt*dudt;
+
+
+    ocolor = color ;
+    return ;
+}
 </script>
 
 <script>
@@ -186,7 +181,6 @@ var env = {
         time : 0 ,
 		Lx : 10.,
 		Ly : 10.,
-        dx : 0.0390625,
         running : false ,
 		width : 512,
 		height : 512,
@@ -252,8 +246,8 @@ function marchUniforms(_inTexture){
     this.dt                 = { type : 'f', value : env.dt              } ;
     this.diffCoef           = { type : 'f', value : env.diffCoef        } ;
     this.currtime           = { type : 'f', value : env.time          } ;
-	this.dx                 = { type : 'f', value : env.dx          } ;
-	this.dy                 = { type : 'f', value : env.dx          } ;
+	this.Lx                 = { type : 'f', value : env.Lx          } ;
+	this.Ly                 = { type : 'f', value : env.Ly          } ;
     this.Temp               = { type : 'f', value : env.Temp          } ;
     return this ;
 }

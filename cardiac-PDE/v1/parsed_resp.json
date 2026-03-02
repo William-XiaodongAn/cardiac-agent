@@ -1,0 +1,28 @@
+
+{
+  "PDEs": "\\frac{\\partial u}{\\partial t} = D \\nabla^2 u \\\n",
+  "number_of_state_variables": 3,
+  "texture_size": 512,
+  "spatial_step": 0.0390625,
+  "domain_size": 20.0,
+  "temporal_step": 0.025,
+  "time_horizon": 100.0,
+  "boundary_conditions": "No-Flux",
+  "parameter_values": {
+    "D": 0.001,
+    "C_m": 1.0,
+    "tau_pv": 7.99,
+    "tau_v1": 9.8,
+    "tau_v2": 312.5,
+    "tau_pw": 870.0,
+    "tau_mw": 41.0,
+    "tau_0": 12.5,
+    "tau_r": 33.83,
+    "tau_si": 29.0,
+    "k": 10.0,
+    "V_csi": 0.861,
+    "V_v": 0.04,
+    "tau_d": 0.5714
+  },
+  "notes": "Ensure high precision for Laplacian."
+}

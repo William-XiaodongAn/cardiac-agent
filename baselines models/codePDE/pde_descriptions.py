@@ -107,7 +107,11 @@ where $x \\in (0,1)^2$ and $t \\in (0,T]$. The ionic currents are functions of t
     \\item $I_{{si}}(u, w) = \\frac{{-w(t, x)(1 + \\tanh(k(u(t, x) - V_{{csi}})))}}{{2\\tau_{{si}}}}$
 \\end{{itemize}}
 
-where $H(\\cdot)$ is the Heaviside step function. In our task, we assume No-Flux (Neumann) boundary conditions. The spatial domain is $\\Omega = [-10,10]$.
+where $H(\\cdot)$ is the Heaviside step function. 
+
+----end of PDEs----
+
+In our task, we assume No-Flux (Neumann) boundary conditions. The spatial domain is $\\Omega = [-10,10]$.
 
 Given the discretization of $u(0, x), v(0, x), w(0, x)$ each of shape $[batch\\_size, N, N]$ where $N$ is the number of spatial points, you need to implement a solver to predict the state variables for the specified subsequent time steps ($t = t_1, \\dots, t_T$). The solver outputs $u, v, w$, each of shape $[batch\\_size, T+1, N]$ (including the initial time frame and subsequent steps). 
 
