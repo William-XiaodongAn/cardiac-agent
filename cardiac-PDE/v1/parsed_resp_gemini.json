@@ -1,0 +1,29 @@
+
+{
+  "PDEs": "\\begin{cases} \n\\partial_t u(t, x) = D \\nabla^2 u(t, x) - \\frac{I_{fi}(u, v) + I_{so}(u) + I_{si}(u, w)}{C_m} \\\\ \n\\partial_t v(t, x) = \n    \\begin{cases} \n    \\frac{1-v(t, x)}{\\tau_{mv}(u)} & u(t, x) < V_c \\\\ \n    \\frac{-v(t, x)}{\\tau_{pv}} & u(t, x) \\ge V_c \n    \\end{cases} \\\\ \n\\partial_t w(t, x) = \n    \\begin{cases} \n    \\frac{1-w(t, x)}{\\tau_{mw}} & u(t, x) < V_c \\\\ \n    \\frac{-w(t, x)}{\\tau_{pw}} & u(t, x) \\ge V_c \n    \\end{cases}\\\\\n    \n    I_{fi}(u, v) = \\frac{-v(t, x) \\cdot H(u(t, x) - V_c) \\cdot (u(t, x) - V_c) \\cdot (1 - u(t, x))}{\\tau_d}\n\\\\\n     I_{so}(u) = \\frac{u(t, x)(1 - H(u(t, x) - V_c))}{\\tau_0} + \\frac{H(u(t, x) - V_c)}{\\tau_r}\n\\\\\n     I_{si}(u, w) = \\frac{-w(t, x)(1 + \\tanh(k(u(t, x) - V_{csi})))}{2\\tau_{si}}\\\\\n     H(x) = \n    \\begin{cases} \n    0 & x < 0 \\\\\n    1 & x \\ge 0 \n    \\end{cases}\n\\end{cases}",
+  "number_of_state_variables": 3,
+  "texture_size": 512,
+  "spatial_step": 0.0390625,
+  "domain_size": 20.0,
+  "temporal_step": 0.025,
+  "time_horizon": 100.0,
+  "boundary_conditions": "Neumann (No-Flux)",
+  "parameter_values": {
+    "D": 0.001,
+    "C_m": 1.0,
+    "tau_pv": 7.99,
+    "tau_v1": 9.8,
+    "tau_v2": 312.5,
+    "tau_pw": 870.0,
+    "tau_mw": 41.0,
+    "tau_0": 12.5,
+    "tau_r": 33.83,
+    "tau_si": 29.0,
+    "k": 10.0,
+    "V_csi": 0.861,
+    "V_c": 0.13,
+    "V_v": 0.04,
+    "tau_d": 0.5714
+  },
+  "notes": "The state variables are u (transmembrane potential), v, and w (gating variables). Use 2nd order central differences for spatial discretization. Boundary conditions must be enforced at every time step. The parameter tau_mv(u) is not explicitly defined in the provided text. Based on the provided parameters tau_v1, tau_v2, and V_v, a common definition is: tau_mv(u) = (1 - H(u - V_v)) * tau_v1 + H(u - V_v) * tau_v2. To maintain stability, internal time-stepping smaller than the required output intervals should be considered."
+}

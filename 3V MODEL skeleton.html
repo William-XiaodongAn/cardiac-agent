@@ -73,7 +73,7 @@ precision highp float ;
 precision highp int ;
 
 uniform sampler2D   inTexture ;
-uniform float       dt, diffCoef, currtime, Lx, Ly,Temp;
+uniform float       dt, diffCoef, currtime, Lx, Ly;
 
 in vec2 cc, pixPos ;
 
@@ -122,18 +122,6 @@ void main() {
     float V_v=0.04;
     float C_m=1.0;
 
-    float T0=37.0;
-    float q10v=1.5;
-    float q10w=2.45;
-    float betafi=0.065;
-    float betaso=0.008;
-    float betasi=0.008;
-    float phiv = pow(q10v,(Temp-T0)/10.0);
-    float phiw = pow(q10w,(Temp-T0)/10.0);
-    float etafi = 1.0+betafi*(Temp-T0);
-    float etaso = 1.0+betaso*(Temp-T0);
-    float etasi = 1.0+betasi*(Temp-T0);
-
     float p = step(V_c, u) ;
     float q = step(V_v, u) ;
 
@@ -141,19 +129,16 @@ void main() {
     float tn = tanh(K*(u-V_csi));
 
     //Rush-Larsen for gating variables
-    v = (1.0-p)*(1.0-(1.0-v)*exp(-phiv*dt/tau_mv)) + p*v*exp(-phiv*dt/tau_pv);
-    w = (1.0-p)*(1.0-(1.0-w)*exp(-phiw*dt/tau_mw)) + p*w*exp(-phiw*dt/tau_pw);
+    v = (1.0-p)*(1.0-(1.0-v)*exp(-dt/tau_mv)) + p*v*exp(-dt/tau_pv);
+    w = (1.0-p)*(1.0-(1.0-w)*exp(-dt/tau_mw)) + p*w*exp(-dt/tau_pw);
 
-    float Ifi  = etafi*(-v*p*(u - V_c)*(1.0-u)/tau_d) ;
-    float Iso  = etaso*(u*(1.0  - p )/tau_0 + p/tau_r) ;
-    float Isi  = etasi*(-w*(1.0  + tn) /(2.0*tau_si)) ;
+    float Ifi  = (-v*p*(u - V_c)*(1.0-u)/tau_d) ;
+    float Iso  = (u*(1.0  - p )/tau_0 + p/tau_r) ;
+    float Isi  = (-w*(1.0  + tn) /(2.0*tau_si)) ;
 
     dudt  -= (Ifi+Iso+Isi)/C_m ;
 
     u += dt*dudt;
-
-    if(u>3.) u=3.;
-    if(u<-3.) u=-3.;
 
     ocolor = color ;
     return ;

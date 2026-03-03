@@ -1,11 +1,11 @@
 
 {
-  "PDEs": "\\frac{\\partial u}{\\partial t} = D \\nabla^2 u \\\n",
+  "PDEs": "\\begin{cases} \\frac{\\partial u}{\\partial t} = D \\nabla^2 u \\\\ \\frac{\\partial v(t, x)}{\\partial t} = \\begin{cases} \\frac{1-v(t, x)}{\\tau_{mv}(u)} & u(t, x) < V_c \\\\ \\frac{-v(t, x)}{\\tau_{pv}} & u(t, x) \\ge V_c \\end{cases} \\\\ \\frac{\\partial w(t, x)}{\\partial t} = \\begin{cases} \\frac{1-w(t, x)}{\\tau_{mw}(u)} & u(t, x) < V_c \\\\ \\frac{-w(t, x)}{\\tau_{pw}} & u(t, x) \\ge V_c \\end{cases} \\\\ I_{fi}(u, v) = \\frac{-v(t, x) \\cdot H(u(t, x) - V_c) \\cdot (u(t, x) - V_c) \\cdot (1 - u(t, x))}{\\tau_d} \\\\ I_{so}(u) = \\frac{u(t, x)(1 - H(u(t, x) - V_c))}{\\tau_0} + \\frac{H(u(t, x) - V_c)}{\\tau_r} \\\\ I_{si}(u, w) = \\frac{-w(t, x)(1 + \\tanh(k(u(t, x) - V_{csi})))}{2\\tau_{si}} \\\\ H(x) = \\begin{cases} 0 & x < 0 \\\\ 1 & x \\ge 0 \\end{cases} \\end{cases}",
   "number_of_state_variables": 3,
   "texture_size": 512,
-  "spatial_step": 0.0390625,
+  "spatial_step": 3.90625e-2,
   "domain_size": 20.0,
-  "temporal_step": 0.025,
+  "temporal_step": 2.5e-2,
   "time_horizon": 100.0,
   "boundary_conditions": "No-Flux",
   "parameter_values": {
@@ -24,5 +24,5 @@
     "V_v": 0.04,
     "tau_d": 0.5714
   },
-  "notes": "Ensure high precision for Laplacian."
+  "notes": null
 }
