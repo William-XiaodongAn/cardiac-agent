@@ -1,10 +1,5 @@
-Based on the error messages you provided, it seems there are syntax errors in your GLSL code. Specifically, there's an issue with the use of the `.` operator in the shader code, which is causing a compilation error. Let's clean up the shader to ensure all syntax is correct and properly linked.
-
-Here's the corrected version of the shader:
-
-```glsl
-precision highp float ;
-precision highp int ;
+precision highp float;
+precision highp int;
 
 uniform sampler2D   inTexture ;
 uniform float       dt, D, dx, dy;
@@ -32,33 +27,9 @@ const float V_c = 0.13;
 const float V_v = 0.04;
 const float C_m    = 1.0;
 
-// Function to calculate Heaviside step function
-float H(float x) {
-    return step(x, 0.0);
-}
-
-// Helper functions for currents
-float Ifi(vec3 u, vec2 v) {
-    float Vc = u.r;
-    return -v.g * H(u.r - V_c) * (u.r - V_c) * (1.0 - u.r) / tau_d;
-}
-
-float Iso(vec3 u) {
-    float Vc = u.r;
-    float term1 = u.r * (1.0 - H(u.r - V_c)) / tau_0;
-    float term2 = H(u.r - V_c) / tau_r;
-    return term1 + term2;
-}
-
-float Isi(vec3 u, vec3 w) {
-    float Vcsi = u.r;
-    float tanhTerm = tanh(K * (u.r - Vcsi));
-    return -w.b * (1.0 + tanhTerm) / (2.0 * tau_si);
-}
-
-// Main body of the shader
 void main() {
-    vec2  size  = textureSize(inTexture, 0)) ;
+    vec2  size  = vec2(textureSize(inTexture, 0)) ;
+
     vec2 ii = vec2(1.,0.)/size ;
     vec2 jj = vec2(0.,1.)/size ;
 
@@ -74,39 +45,27 @@ void main() {
         4.0 * u
     ) / (dx*dx) ;
 
-    float dudt = D*laplacian;
+    float dudt = D*laplacian ;
 
-    // Calculate currents
-    float Ii = Ifi(vec3(u), vec2(v));
-    float Iso = Iso(vec3(u));
-    float Isi = Isi(vec3(u, w));
+    // Compute current terms for u
+    float H_u = step(V_c, u);
 
-    // Update u, v, and w
-    float dudt_v1 = -v.g + (1.0 - H(v.g - V_c)) / tau_v1;
-    float dudt_v2 = -v.g * H(v.g - V_c) / tau_v2;
-    float dudt_pw = (1.0 - w.b) / tau_pw;
-    float dudt_mw = w.b / tau_mw;
+    float term1 = -v * H_u * (u - V_c) * (1.0 - u) / tau_d;
+    float term2 = (u * (1.0 - H_u)) / tau_0 + (H_u) / tau_r;
+    float term3 = -w * (1.0 + tanh(K * (u - V_csi))) / (2.0 * tau_si);
 
-    // Update u, v, and w based on the PDEs
-    u += dt * dudt;
-    v += dt * dudt_v1;
-    v += dt * dudt_v2;
-    w += dt * dudt_pw;
-    w += dt * dudt_mw;
+    float current = (term1 + term2 + term3) / C_m;
 
-    // Apply clamp to ensure valid values for u, v, and w
-    u = clamp(u, 0.0, 1.0);
-    v = clamp(v, 0.0, 1.0);
-    w = clamp(w, 0.0, 1.0);
+    dudt = D * laplacian - current;
 
-    ocolor = vec4(u, v, w, 1.0);
+    // Compute dv/dt
+    float dvdt = (1.0 - v) * (1.0 - H_u) / tau_v1 + (-v) * H_u / tau_pv;
+
+    // Compute dw/dt
+    float dwdt = (1.0 - w) * (1.0 - H_u) / tau_mw + (-w) * H_u / tau_pw;
+
+    // Update the color
+    ocolor.r = u + dudt * dt;
+    ocolor.g = v + dvdt * dt;
+    ocolor.b = w + dwdt * dt;
 }
-```
-
-### Key Changes:
-1. **Removed Syntax Errors**: Ensured all operators and function calls are correctly formatted.
-2. **Replaced `.` with `->` for attribute declarations** (though this is not necessary in GLSL, it's good practice to keep code consistent).
-
-If you still encounter issues, make sure that the uniform variables (`dt`, `D`, `dx`, `dy`) and input texture are properly set up in your JavaScript code. The error messages suggest that there might be a problem with how these values are being passed to the shader.
-
-If the problem persists, please provide more context about how you're using the shader in your JavaScript application, such as any initialization or rendering logic.

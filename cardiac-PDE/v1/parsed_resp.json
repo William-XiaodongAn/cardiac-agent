@@ -1,13 +1,12 @@
-
 {
-  "PDEs": "\\begin{cases} \\frac{\\partial u}{\\partial t} = D \\nabla^2 u \\\\ \\frac{\\partial v(t, x)}{\\partial t} = \\begin{cases} \\frac{1-v(t, x)}{\\tau_{mv}(u)} & u(t, x) < V_c \\\\ \\frac{-v(t, x)}{\\tau_{pv}} & u(t, x) \\ge V_c \\end{cases} \\\\ \\frac{\\partial w(t, x)}{\\partial t} = \\begin{cases} \\frac{1-w(t, x)}{\\tau_{mw}(u)} & u(t, x) < V_c \\\\ \\frac{-w(t, x)}{\\tau_{pw}} & u(t, x) \\ge V_c \\end{cases} \\\\ I_{fi}(u, v) = \\frac{-v(t, x) \\cdot H(u(t, x) - V_c) \\cdot (u(t, x) - V_c) \\cdot (1 - u(t, x))}{\\tau_d} \\\\ I_{so}(u) = \\frac{u(t, x)(1 - H(u(t, x) - V_c))}{\\tau_0} + \\frac{H(u(t, x) - V_c)}{\\tau_r} \\\\ I_{si}(u, w) = \\frac{-w(t, x)(1 + \\tanh(k(u(t, x) - V_{csi})))}{2\\tau_{si}} \\\\ H(x) = \\begin{cases} 0 & x < 0 \\\\ 1 & x \\ge 0 \\end{cases} \\end{cases}",
+  "PDEs": "\\frac{\\partial u}{\\partial t} = D \\nabla^2 u - \\frac{I_{fi}(u, v) + I_{so}(u) + I_{si}(u, w)}{C_m} \\n\\frac{\\partial v}{\\partial t} = \\begin{cases} \\frac{1-v}{\\tau_{mv}(u)} & u < V_c \\\\ \\frac{-v}{\\tau_{pv}} & u \\ge V_c \\end{cases} \\n\\frac{\\partial w}{\\partial t} = \\begin{cases} \\frac{1-w}{\\tau_{mw}} & u < V_c \\\\ \\frac{-w}{\\tau_{pw}} & u \\ge V_c \\end{cases} \\n\\nI_{fi}(u, v) = \\frac{-v \\cdot H(u - V_c) \\cdot (u - V_c) \\cdot (1 - u)}{\\tau_d} \\n\\nI_{so}(u) = \\frac{u(1 - H(u - V_c))}{\\tau_0} + \\frac{H(u - V_c)}{\\tau_r} \\n\\nI_{si}(u, w) = \\frac{-w(1 + \\tanh(k(u - V_{csi})))}{2\\tau_{si}} \\n\\nH(x) = \\begin{cases} 0 & x < 0 \\\\ 1 & x \\ge 0 \\end{cases}",
   "number_of_state_variables": 3,
   "texture_size": 512,
-  "spatial_step": 3.90625e-2,
+  "spatial_step": 0.0390625,
   "domain_size": 20.0,
-  "temporal_step": 2.5e-2,
+  "temporal_step": 0.025,
   "time_horizon": 100.0,
-  "boundary_conditions": "No-Flux",
+  "boundary_conditions": "Neumann",
   "parameter_values": {
     "D": 0.001,
     "C_m": 1.0,
@@ -21,8 +20,9 @@
     "tau_si": 29.0,
     "k": 10.0,
     "V_csi": 0.861,
+    "V_c": 0.13,
     "V_v": 0.04,
     "tau_d": 0.5714
   },
-  "notes": null
+  "notes": "Use 2nd order central differences for spatial discretization. Enforce Neumann boundary conditions at every time step. Time step dt=0.025 must be smaller than output intervals for stability."
 }
