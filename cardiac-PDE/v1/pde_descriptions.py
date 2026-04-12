@@ -1,3 +1,16 @@
+"""
+PDE model descriptions used as sample inputs to the Web-PDE-LLM pipeline.
+
+Each description is a LaTeX + prose specification that the clarifier and parse
+agents convert into a structured JSON spec, which the coding agent then
+translates into a WebGL GLSL shader.
+
+Supported models
+----------------
+fk_description  — Fenton-Karma 3V  (3 state variables: u, v, w)
+ap_description  — Aliev-Panfilov 2V (2 state variables: u, v)
+"""
+
 fk_description = '''
 The PDE system is a 2D reaction-diffusion model, describing the evolution of the normalized transmembrane potential $u(t, x)$ and two gating variables $v(t, x)$ and $w(t, x)$:
 
@@ -50,5 +63,43 @@ Model Parameters are:
 - Use finite difference for spatial discretization (2nd order central differences
 recommended)
 
+'''
+
+
+# ---------------------------------------------------------------------------
+# Aliev-Panfilov 2V model
+# ---------------------------------------------------------------------------
+ap_description = '''
+The PDE system is a 2D reaction-diffusion model (Aliev-Panfilov), describing
+the evolution of the normalized transmembrane potential $u(t, x)$ and a
+recovery variable $v(t, x)$:
+
+\\begin{{equation}}
+\\begin{{cases}}
+\\partial_t u(t, x) = D \\nabla^2 u(t, x)
+    - k\\, u(t,x)\\bigl(u(t,x) - a\\bigr)\\bigl(u(t,x) - 1\\bigr)
+    - u(t,x)\\, v(t,x) \\\\
+\\partial_t v(t, x) = \\varepsilon(u, v)
+    \\bigl(-v(t,x) - k\\, u(t,x)\\bigl(u(t,x) - a - 1\\bigr)\\bigr) \\\\
+\\varepsilon(u, v) = \\varepsilon_0 + \\dfrac{{\\mu_1\\, v(t,x)}}{{\\mu_2 + u(t,x)}}
+\\end{{cases}}
+\\end{{equation}}
+
+where $x \\in (0,1)^2$ and $t \\in (0,T]$.
+Neumann (no-flux) boundary conditions apply.
+Spatial domain $\\Omega = [-10,10]$.
+
+Model Parameters:
+$D = 0.001$, $a = 0.1$, $k = 8.0$,
+$\\varepsilon_0 = 0.01$, $\\mu_1 = 0.07$, $\\mu_2 = 0.3$
+
+**Important implementation notes**:
+
+- Use **512 interior spatial points**
+- The domain is $x \\in [-10,10]$ with $dx \\approx 3.90625 \\times 10^{{-2}}$
+- Time horizon is $T = 100.0$ with $dt = 2.5 \\times 10^{{-2}}$
+- State variables: $u$ stored in texture R channel, $v$ in G channel; B unused
+- Enforce Neumann boundary conditions at every time step
+- Use 2nd-order central differences for the spatial Laplacian
 '''
 
