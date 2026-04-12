@@ -36,8 +36,13 @@ Natural Language / PDE Spec
 
 ## Agent Pipeline
 
+### 0. Clarifier Agent (`clarifier_agent.py`) — NEW
+Validates the user's input before parsing. Infers standard defaults (grid size, time step, canonical parameter values) for known cardiac models, and flags fields that are genuinely missing with concrete questions. Prevents downstream failures caused by underspecified prompts.
+
+Output: `{"status": "complete"|"incomplete", "clarified_spec": "...", "missing": [...], "questions": [...]}`
+
 ### 1. Parse Agent (`parse_agent.py`)
-Converts a natural language or LaTeX PDE description into a structured JSON specification. Extracts:
+Converts the clarified spec into a structured JSON specification. Extracts:
 - Mathematical PDEs (LaTeX form)
 - Grid and domain configuration (texture size, spatial/temporal resolution)
 - Physical parameters (diffusion coefficient, τ constants, voltage thresholds)
@@ -46,24 +51,40 @@ Converts a natural language or LaTeX PDE description into a structured JSON spec
 Output: `parsed_resp.json`
 
 ### 2. Coding Agent (`coding_agent.py`)
-Takes the parsed JSON and a GLSL skeleton (`coding_skeleton.frag`) and generates a complete WebGL fragment shader. Fills in:
-- Laplacian computation (4-point finite difference stencil)
-- Ionic current expressions (Ifi, Iso, Isi)
-- Gating variable kinetics (Rush-Larsen, piecewise thresholding)
-- Explicit Euler time integration
+Takes the parsed JSON and a model-specific GLSL skeleton and generates a complete WebGL fragment shader. Fills in:
+- Laplacian computation (4-point finite difference stencil, Neumann BCs)
+- Ionic current / reaction term expressions
+- Gating variable kinetics (piecewise thresholding)
+- Explicit Euler time integration with clamping
 
 Output: `march_shader.frag`
 
 ### 3. Debug Agent (`debug_agent.py`)
-If the generated shader fails to compile, the debug agent receives the shader source and the WebGL error log, then returns corrected code.
+If the generated shader has compilation errors or fails validation, the debug agent receives the shader source and the error/validation report, then returns corrected code. Called up to `max_debug_attempts` times.
 
 Output: corrected `march_shader.frag`
 
+### 4. Validation Agent (`validation_agent.py`) — NEW
+Performs static analysis of the generated shader before it reaches the browser. Checks:
+- All state variable channels are updated (`ocolor.r/g/b`)
+- Laplacian is normalized by dx²
+- Neumann boundary conditions are enforced
+- Parameter values match the spec
+- No division-by-zero / NaN risks
+- Correct explicit Euler integration
+- All ionic currents / reaction terms are present
+
+If validation fails, issues are fed back to the debug agent automatically.
+
+Output: `{"status": "pass"|"warn"|"fail", "checks": {...}, "issues": [...], "suggestion": "..."}`
+
 ---
 
-## Cardiac Model: Fenton-Karma 3V
+## Supported Cardiac Models
 
-The target model solves three coupled PDEs on a 512×512 grid:
+### Fenton-Karma 3V (default)
+
+Three coupled PDEs on a 512×512 grid:
 
 | Variable | Texture Channel | Meaning |
 |---|---|---|
@@ -71,13 +92,23 @@ The target model solves three coupled PDEs on a 512×512 grid:
 | `v` | G | Fast gating variable |
 | `w` | B | Slow gating variable |
 
-**Governing equations:**
-- `du/dt = D·∇²u + I_fi(u,v) + I_so(u) + I_si(u,w)`
-- `dv/dt`, `dw/dt` — piecewise gating kinetics with threshold V_c = 0.13
+- `du/dt = D·∇²u − (I_fi + I_so + I_si) / C_m`
+- `dv/dt`, `dw/dt` — piecewise gating kinetics (threshold V_c = 0.13)
 
-**Default configuration:**
-- Domain: 20.0 units, 512×512 grid (Δx ≈ 0.039)
-- Time step: dt = 0.025, diffusion D = 0.001
+### Aliev-Panfilov 2V — NEW
+
+Simpler two-variable model, good for generalizability comparison:
+
+| Variable | Texture Channel | Meaning |
+|---|---|---|
+| `u` | R | Transmembrane potential |
+| `v` | G | Recovery variable |
+
+- `du/dt = D·∇²u − k·u·(u−a)·(u−1) − u·v`
+- `dv/dt = ε(u,v)·(−v − k·u·(u−a−1))`,  ε(u,v) = ε₀ + μ₁v/(μ₂+u)
+
+**Common configuration (both models):**
+- Domain: 20.0 units, 512×512 grid (Δx ≈ 0.039), dt = 0.025, D = 0.001
 - Boundary: Neumann (no-flux)
 
 ---
@@ -87,19 +118,27 @@ The target model solves three coupled PDEs on a 512×512 grid:
 ```
 cardiac-agent/
 ├── cardiac-PDE/v1/                              # Core framework (main)
-│   ├── multi_agent_workflow_small_model.ipynb   # Main workflow notebook
-│   ├── multi_agent_workflow.ipynb               # Extended workflow notebook
-│   ├── parse_agent.py                           # Agent 1: PDE spec → JSON
-│   ├── coding_agent.py                          # Agent 2: JSON → GLSL shader
+│   ├── pipeline.py                              # Production CLI — single or parallel runs
+│   ├── config.py                                # Centralized LLM + pipeline configuration
+│   ├── multi_agent_workflow_small_model.ipynb   # Interactive 5-agent notebook (FK + AP)
+│   │
+│   ├── clarifier_agent.py                       # Agent 0: validate / complete user spec
+│   ├── parse_agent.py                           # Agent 1: spec → structured JSON
+│   ├── coding_agent.py                          # Agent 2: JSON + skeleton → GLSL shader
 │   ├── debug_agent.py                           # Agent 3: error log → fixed shader
+│   ├── validation_agent.py                      # Agent 4: static physical correctness check
 │   ├── system_prompt.py                         # Shared LLM system prompt
-│   ├── pde_descriptions.py                      # Sample input: Fenton-Karma 3V spec
-│   ├── coding_skeleton.frag                     # GLSL template given to coding agent
-│   ├── march_shader.frag                        # Generated output shader
-│   ├── parsed_resp.json                         # Example parse agent output
-│   ├── parsed_resp_gemini.json                  # Gemini parse agent output
-│   ├── coding_skeleton_prepare.ipynb            # Skeleton preparation notebook
-│   └── 3V MODEL skeleton.html                   # Browser harness for running the shader
+│   │
+│   ├── pde_descriptions.py                      # Model specs: Fenton-Karma + Aliev-Panfilov
+│   ├── coding_skeleton.frag                     # GLSL skeleton — Fenton-Karma 3V
+│   ├── ap_coding_skeleton.frag                  # GLSL skeleton — Aliev-Panfilov 2V
+│   ├── march_shader.frag                        # Reference generated shader (FK)
+│   ├── requirements.txt                         # Python dependencies
+│   │
+│   ├── outputs/
+│   │   ├── fenton_karma/                        # FK pipeline outputs (JSON + .frag)
+│   │   └── aliev_panfilov/                      # AP pipeline outputs (JSON + .frag)
+│   └── 3V MODEL skeleton.html                   # Browser harness for running shaders
 │
 ├── cardiac-PDE/tester/                          # Test harness (HTML + fragment shader)
 ├── baselines models/
@@ -130,20 +169,31 @@ cardiac-agent/
 
 2. **Install dependencies:**
    ```bash
-   pip install google-generativeai jupyter
+   pip install -r requirements.txt
    ```
 
-3. **Open the main notebook:**
+3. **Run via CLI (recommended):**
+   ```bash
+   # Fenton-Karma only
+   python pipeline.py --model fenton_karma
+
+   # Aliev-Panfilov only
+   python pipeline.py --model aliev_panfilov
+
+   # Both models in parallel
+   python pipeline.py --all
+
+   # Custom tau_d for FK
+   python pipeline.py --model fenton_karma --tau-d 0.45
+   ```
+
+4. **Or run interactively in the notebook:**
    ```bash
    jupyter notebook multi_agent_workflow_small_model.ipynb
    ```
+   The notebook walks through all 5 agents step-by-step for both FK and AP models.
 
-4. **Set your API key and run all cells.** The notebook will:
-   - Feed the cardiac PDE description (`pde_descriptions.py`) to the parse agent
-   - Pass the parsed JSON to the coding agent to generate `march_shader.frag`
-   - Invoke the debug agent automatically if compilation errors are detected
-
-5. **Open `3V MODEL skeleton.html`** in your browser to load the generated shader and view the real-time simulation.
+5. **Open `3V MODEL skeleton.html`** in your browser, point it at the generated `outputs/<model>/march_shader.frag`, and view the real-time simulation.
 
 ---
 
@@ -151,12 +201,17 @@ cardiac-agent/
 
 | File | Purpose |
 |---|---|
-| `multi_agent_workflow_small_model.ipynb` | End-to-end pipeline notebook |
-| `pde_descriptions.py` | Sample input: Fenton-Karma 3V PDE spec |
+| `pipeline.py` | Production CLI — single or parallel multi-model runs |
+| `config.py` | LLM model assignments, retry limits, output paths |
+| `multi_agent_workflow_small_model.ipynb` | Interactive 5-agent notebook (FK + AP) |
+| `pde_descriptions.py` | Sample inputs: Fenton-Karma 3V + Aliev-Panfilov 2V specs |
 | `system_prompt.py` | System prompt shared across all agents |
-| `coding_skeleton.frag` | GLSL template provided to the coding agent |
-| `march_shader.frag` | Final output: generated WebGL fragment shader |
-| `parsed_resp.json` | Intermediate output: structured PDE specification |
+| `coding_skeleton.frag` | GLSL template for Fenton-Karma |
+| `ap_coding_skeleton.frag` | GLSL template for Aliev-Panfilov |
+| `clarifier_agent.py` | Agent 0: spec validation + default inference |
+| `validation_agent.py` | Agent 4: static physical correctness checks |
+| `outputs/*/march_shader.frag` | Generated WebGL fragment shaders |
+| `outputs/*/parsed_resp.json` | Intermediate structured PDE specifications |
 
 ---
 
