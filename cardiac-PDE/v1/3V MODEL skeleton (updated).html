@@ -143,7 +143,17 @@ void main() {
     }
 </script>
 
+
+<div id="env-config" 
+     dt="0.025"
+     dx="0.0390625"
+     width = "512"
+     end_time = "100"
+     >
+</div>
+
 <script>
+const configElement = document.getElementById('env-config');
 function source(id){
     return document.getElementById(id).text ;
 }
@@ -161,12 +171,14 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 0.025 ,
+        dt : configElement.getAttribute('dt'),
         time : 0 ,
-        dx : 0.0390625,
+        dx : configElement.getAttribute('dx'),
+        dy : configElement.getAttribute('dx'),
         running : false ,
-		width : 512,
-		height : 512,
+		width : configElement.getAttribute('width'),
+		height : configElement.getAttribute('width'),
+        end_time : configElement.getAttribute('end_time'),
 		clickRadius : 0.06 ,
 		clickPosition  : [0.,0.] ,
 		skip : 40,
@@ -259,6 +271,9 @@ function run(){
         for(var i = 0 ; i<env.skip ; i++){
             march() ;
             env.usgn.update(env.time) ;
+            if (abs(env.time - env.end_time) <= env.dt){
+                env.running = false ;
+            }
         }
     }
     splot.render() ;
