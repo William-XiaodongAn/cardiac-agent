@@ -1,0 +1,16 @@
+# Web-PDE-LLM dependencies
+# Install with: pip install -r requirements.txt
+
+# LLM backends
+ollama>=0.4.0                  # local model inference (qwen3, qwen2.5-coder, etc.)
+google-generativeai>=0.8.0     # optional: Gemini API backend
+
+# Environment / config
+python-dotenv>=1.0.0
+
+# Simulation testing (optional — needed for capture_spiral*.py scripts)
+playwright>=1.40.0
+
+# Notebook support
+jupyter>=1.0.0
+ipykernel>=6.0.0
