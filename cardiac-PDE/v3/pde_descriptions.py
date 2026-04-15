@@ -52,7 +52,7 @@ recommended)
 
 '''
 
-Advection_description = '''
+advection_description = '''
 The PDE system is a 1D advection model:
 
 \\begin{{equation}}
@@ -61,7 +61,7 @@ The PDE system is a 1D advection model:
 \\end{{cases}}
 \\end{{equation}}
 
-where $x \\in (0,1)$ and $t \\in (0,T]$. In our task, we assume No-Flux (Neumann) boundary conditions. The spatial domain is $\\Omega = [0,1]$.
+where $x \\in (0,1)$ and $t \\in (0,T]$. The spatial domain is $\\Omega = [0,1]$.
     
 Given the discretization of $u(0, x)$ of shape $[batch_size, N]$ where $N$ is the number of spatial points, you need to implement a solver to predict the state variables for the specified subsequent time steps ($t = t_1, \\dots, t_T$). The solver outputs $u$, each of shape $[batch_size, T+1, N]$ (including the initial time frame and subsequent steps). 
 
@@ -78,10 +78,6 @@ Model Parameters are:
 
 - Time horizon is $T=200.0$ with $dt =1.0 \\times 10^{{-3}}$
 
-- The boundary conditions must be enforced at every time step
-
-- Use finite difference for spatial discretization (2nd order central differences
-recommended)
-
+- Use appropriate boundary conditions.
 
 '''
