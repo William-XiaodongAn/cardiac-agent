@@ -78,6 +78,6 @@ Model Parameters are:
 
 - Time horizon is $T=200.0$ with $dt =1.0 \\times 10^{{-3}}$
 
-- Use appropriate boundary conditions.
+- Use periodic boundary conditions.
 
 '''

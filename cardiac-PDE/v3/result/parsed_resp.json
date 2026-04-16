@@ -7,5 +7,6 @@
   "temporal_step": 0.001,
   "time_horizon": 200.0,
   "boundary_conditions": "Periodic",
-  "parameter_values": {"\\beta": 0.1}
+  "parameter_values": {"beta": 0.1},
+  "notes": null
 }
