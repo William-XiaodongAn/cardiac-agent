@@ -1,0 +1,26 @@
+# v4 evaluation framework dependencies
+# Install with: pip install -r requirements.txt
+
+# Core scientific computing
+numpy>=1.24
+scipy>=1.11           # solve_ivp (OpInf-LLM ROM integration), lstsq
+scikit-image>=0.21    # SSIM metric
+
+# Visualisation
+matplotlib>=3.7
+pillow>=10.0
+
+# LLM backends
+ollama>=0.4.0         # local model inference
+
+# PDEBench data
+h5py>=3.9             # reading PDEBench HDF5 files
+# Optional: pip install datasets huggingface_hub  (for HuggingFace download)
+
+# WebGL capture (optional, for Web-PDE-LLM evaluation)
+playwright>=1.40.0
+# After install: playwright install chromium
+
+# Notebook support
+jupyter>=1.0.0
+ipykernel>=6.0.0
