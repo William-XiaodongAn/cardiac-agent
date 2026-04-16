@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from functools import partial
 import re
+import threading
 
 def load_IC(simulation_file: str, IC_file: str, T_end: float = 100.0) -> None:
     """
@@ -46,9 +47,12 @@ def verify_result(simulation_file: str, IC_file: str, T_end: float = 100.0) -> N
 
     load_IC(simulation_file,IC_file,T_end)
     
-    PORT = 8000
+    dir_path = os.path.dirname(simulation_file)
+    simulation_folder = os.path.abspath(os.path.basename(dir_path))
+    
+    PORT = 8001
     TARGET_MESSAGE = "Simulation finished!"
-    URL = f"http://localhost:{PORT}/index.html"
+    URL = f"http://localhost:{PORT}/updated_skeleton.html"
     download_folder = os.path.join(os.getcwd(), "simulation_downloads")
     if not os.path.exists(download_folder):
         os.makedirs(download_folder)
@@ -56,15 +60,15 @@ def verify_result(simulation_file: str, IC_file: str, T_end: float = 100.0) -> N
         
     def start_server():
         """Starts a local server in the specified directory."""
-        handler_with_path = partial(SimpleHTTPRequestHandler, directory=simulation_file)
+        handler_with_path = partial(SimpleHTTPRequestHandler, directory=simulation_folder)
 
         TCPServer.allow_reuse_address = True
         with TCPServer(("", PORT), handler_with_path) as httpd:
             print(f"Serving {simulation_file} at {URL}")
             httpd.serve_forever()
         
-    start_server()
-
+    server_thread = threading.Thread(target=start_server, daemon=True)
+    server_thread.start() # Moves to the next line of code immediately
     # 2. Configure Chrome
     options = webdriver.ChromeOptions()
     prefs = {
@@ -91,7 +95,7 @@ def verify_result(simulation_file: str, IC_file: str, T_end: float = 100.0) -> N
         try:
             # 1. Look for the span containing 'Solve/Pause'
             # We use '*' because dat.GUI doesn't use standard <button> tags
-            xpath_selector = "//*[contains(text(), 'Solve/Pause')]"
+            xpath_selector = "//*[contains(text(), 'running')]"
             
             # 2. Wait for the element to be present and visible
             solve_element = WebDriverWait(driver, 2).until(
@@ -100,7 +104,7 @@ def verify_result(simulation_file: str, IC_file: str, T_end: float = 100.0) -> N
             
             # 3. Click the element directly via Selenium
             solve_element.click()
-            print("Clicked 'Solve/Pause' GUI element successfully.")
+            print("Clicked 'running' GUI element successfully.")
         except Exception as e:
             print(f"Could not find or click the button automatically: {e}")
         # -------------------------------------------------------

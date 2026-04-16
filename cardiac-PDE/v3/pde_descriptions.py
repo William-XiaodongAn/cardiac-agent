@@ -57,7 +57,7 @@ The PDE system is a 1D advection model:
 
 \\begin{{equation}}
 \\begin{{cases}} 
-\\partial_t u(t, x) = \\beta \\partial_x u(t,x) \\\\
+\\partial_t u(t, x) = -\\beta \\partial_x u(t,x) \\\\
 \\end{{cases}}
 \\end{{equation}}
 

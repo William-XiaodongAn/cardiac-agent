@@ -104,24 +104,39 @@ var env = {
   } ;
 // ---------------------------------------------------------------
 
+
 // defining the textures .................................................
-var fcolor = new Abubu.Float32Texture(env.width,env.height) ;
-var scolor = new Abubu.Float32Texture(env.width,env.height) ;
+env.fcolor0 = new Abubu.Float32Texture(env.width,env.height) ;
+env.scolor0 = new Abubu.Float32Texture(env.width,env.height) ;
+env.fcolor0.pairable = true ;
+env.scolor0.pairable = true ;
+var texture_num = 1;
+
+env.fcolors = [] ;
+env.scolors = [] ;
+for(var i=0; i<1; i++){
+    env['fcolor'+i] = new Abubu.Float32Texture( 
+            env.width, env.height, { pairable : true } ) ;
+    env['scolor'+i] = new Abubu.Float32Texture( 
+            env.width, env.height, { pairable : true } ) ;
+    env.fcolors.push(env['fcolor'+i]) ;
+    env.scolors.push(env['scolor'+i]) ;
+}
 
 // Setup a solver ........................................................
 var init = new Abubu.Solver( {
     fragmentShader  : source('init'),
     targets : {
-        color1 : { location :0, target : fcolor  } ,
-        color2 : { location :1, target : scolor  } ,
+        color1 : { location :0, target : env.fcolor0  } ,
+        color2 : { location :1, target : env.scolor0  } ,
     }
 } ) ;
 init.render();
 
 // post processing .......................................................
 var plot = new Abubu.Plot2D({
-    target : fcolor,
-    prevTarget: scolor,
+    target : env.fcolor0,
+    prevTarget: env.scolor0,
     channel : 'r',
     minValue : -1.0 ,
     maxValue : 1.0 ,
@@ -132,32 +147,9 @@ var plot = new Abubu.Plot2D({
 plot.init() ;
 plot.render() ;
 
-var splot = new Abubu.SignalPlot({
-    noPltPoints : 1024,
-    grid : 'on',
-    nx   : 4 ,
-    ny   : 5 ,
-    xticks : { mode : 'auto', unit : 'ms', font : '11pt Times' } ,
-    yticks : { mode : 'auto', unit : '' , font : '12pt Times',precision : 1  } ,
-    canvas : canvas_2,
-} ) ;
-
-env.usgn = splot.addSignal( fcolor, {
-    channel : 'r',
-    minValue : -1.0,
-    maxValue : 2.5 ,
-    restValue : 0 ,
-    color : [ 1.,0.,0.0 ],
-    visible : true ,
-    timewindow : 1000 ,
-    probePosition : [0.5,0.5]
-} ) ;
-splot.init() ;
-
 function marchUniforms(_inTexture){
     this.inTexture          = { type : 't', value : _inTexture          } ;
     this.dt                 = { type : 'f', value : env.dt              } ;
-    this.currtime           = { type : 'f', value : env.time          } ;
 	this.dx                 = { type : 'f', value : env.dx          } ;
 	this.dy                 = { type : 'f', value : env.dx          } ;
     return this ;
@@ -165,33 +157,119 @@ function marchUniforms(_inTexture){
 
 var fmarch = new Abubu.Solver({
         fragmentShader : source( 'march' ) ,
-		uniforms : new marchUniforms( fcolor ) ,
-        targets : { ocolor : { location : 0, target : scolor } }
+		uniforms : new marchUniforms( env.fcolor0 ) ,
+        targets : { ocolor : { location : 0, target : env.scolor0 } }
     } ) ;
 
 var smarch = new Abubu.Solver({
         fragmentShader : source( 'march' ) ,
-  		uniforms : new marchUniforms( scolor ) ,
-        targets : { ocolor : { location : 0, target : fcolor } }
+  		uniforms : new marchUniforms( env.scolor0 ) ,
+        targets : { ocolor : { location : 0, target : env.fcolor0 } }
     } ) ;
 
 function march(){
-    fmarch.uniforms['currtime'].value = env.time ;
     fmarch.render() ;
     env.time += env.dt ;
-    smarch.uniforms['currtime'].value = env.time ;
     smarch.render() ;
     env.time += env.dt ;
 }
 
+env.csvFileName = 'result.csv' ;
+env.saveCsvFile = function(){
+    var link = document.createElement('a') ;
+    var data = "data:text;charset=utf-8," +
+        env.width + ',' + 
+        env.height ;
+    var width   = env.width ;
+    var height = env.height ;
+    var fvals = {} ;
+    for(let i=0;i<texture_num; i++){
+        let color = "fcolor"+i ;
+        fvals[color] = env[color].value ;
+    }
+
+    for(var i=0 ; i<(width*height) ; i++){
+        var indx = i*4 ;
+        let rows = "" ;
+        for( let j=0; j<texture_num; j++){
+            name = "fcolor"+j ;
+            rows += ',' + 
+            fvals[name][indx  ].toExponential()+ ',' +
+            fvals[name][indx+1].toExponential()+ ',' +
+            fvals[name][indx+2].toExponential()+ ',' +
+            fvals[name][indx+3].toExponential() ;
+        }
+        data += rows ;
+    }
+    
+    var csv = encodeURI( data ) ;
+    link.setAttribute( 'href', csv ) ;
+    link.setAttribute( 'download', env.csvFileName ) ;
+    link.click() ;
+} ;
+
+
+//IC
+const IC_url = './random_sample_t0.csv';
+const T_end = 2;
+//IC
+
+function loadCsv(url) {
+    // fetch starts the request and "promises" to get back to you
+    fetch(url)
+        .then(response => response.text()) // Convert the raw response to text
+        .then(csvText => {
+            // This code runs ONLY after the file is fully loaded
+            processCsvData(csvText); 
+        })
+        .catch(error => console.error("Error:", error));
+}
+
+function processCsvData(result) {
+    var data = result.split(',');
+    var width = parseInt(data[0]);
+    var height = parseInt(data[1]);
+
+    var tabs = [];
+    for (var i = 0; i < texture_num; i++) {
+        tabs.push(new Float32Array(width * height * 4));
+    }
+
+    var p = 2;
+    var indx;
+
+    for (var i = 0; i < (width * height); i++) {
+        indx = i * 4;
+        for (var j = 0; j < texture_num; j++) {
+            tabs[j][indx]     = parseFloat(data[p++]);
+            tabs[j][indx + 1] = parseFloat(data[p++]);
+            tabs[j][indx + 2] = parseFloat(data[p++]);
+            tabs[j][indx + 3] = parseFloat(data[p++]);
+        }
+    }
+
+    for (var j = 0; j < texture_num; j++) {
+        env.fcolors[j].data = tabs[j];
+        env.scolors[j].data = tabs[j];
+    }
+}
+
+loadCsv(IC_url) ;
+
 function run(){
     if (env.running){
         for(var i = 0 ; i<env.skip ; i++){
+
+            if (env.time >= T_end){
+                env.running = false ;
+                console.log("Simulation finished!")
+                env.saveCsvFile();
+                break ;
+            }
             march() ;
-            env.usgn.update(env.time) ;
         }
+
     }
-    splot.render() ;
     plot.render() ;
     requestAnimationFrame(run) ;
 }
@@ -200,14 +278,14 @@ function run(){
 var click = new Abubu.Solver({
     fragmentShader : source( 'click' ) ,
     uniforms : {
-        inTexture : { type : 't', value : fcolor } ,
+        inTexture : { type : 't', value : env.fcolor0 } ,
         clickRadius: { type : 'f', value : env.clickRadius } ,
         clickPosition: { type : 'v2', value : env.clickPosition } ,
     } ,
-    targets : { ocolor : { location : 0 , target : scolor } }
+    targets : { ocolor : { location : 0 , target : env.scolor0 } }
 } ) ;
 
-var clickCopy = new Abubu.Copy( scolor, fcolor ) ;
+var clickCopy = new Abubu.Copy( env.scolor0, env.fcolor0 ) ;
 
 new Abubu.MouseListener({
     canvas : canvas_1 ,
@@ -223,22 +301,9 @@ new Abubu.MouseListener({
 env.initialize = function(){
     env.time = 0 ;
     init.render() ;
-    splot.init() ;
-    env.usgn.init(0) ;
     plot.init() ;
 }
 
-function addToGui(guiElemenent, obj, paramList, solverList){
-    var elements = {} ;
-    for(i in paramList){
-        var param = paramList[i] ;
-        elements[param] = guiElemenent.add(obj, param )  ;
-        elements[param].onChange(function(){
-            Abubu.setUniformInSolvers(this.property, this.object[this.property], solverList) ;
-        } ) ;
-    }
-    return elements ;
-}
 
 function createGui(){
     var gui = new Abubu.Gui() ;
@@ -250,7 +315,7 @@ function createGui(){
     exe.add(env,'time').listen() ;
     exe.add(env,'skip') ;
     exe.add(env,'initialize') ;
-    exe.add(env,'running').listen() ;
+    exe.add(env,'running') ;
     exe.open() ;
 }
 

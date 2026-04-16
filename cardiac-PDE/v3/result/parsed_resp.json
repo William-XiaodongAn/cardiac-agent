@@ -1,12 +1,14 @@
 {
-  "PDEs": "\\frac{\\partial u}{\\partial t} = \\beta \\frac{\\partial u}{\\partial x}",
+  "PDEs": "\\frac{\\partial u}{\\partial t} = -\\beta \\frac{\\partial u}{\\partial x}",
   "number_of_state_variables": 1,
   "texture_size": 1024,
   "spatial_step": 0.0009765625,
   "domain_size": 1.0,
   "temporal_step": 0.001,
   "time_horizon": 200.0,
-  "boundary_conditions": "Periodic",
-  "parameter_values": {"beta": 0.1},
-  "notes": null
+  "boundary_conditions": "periodic",
+  "parameter_values": {
+    "beta": 0.1
+  },
+  "notes": "Use 1024 interior spatial points. Internal time-stepping smaller than the required output intervals should be considered."
 }

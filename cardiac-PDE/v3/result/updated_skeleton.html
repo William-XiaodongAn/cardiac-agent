@@ -72,23 +72,18 @@ void main() {
 precision highp float;
 precision highp int;
 
-uniform sampler2D inTexture;
-uniform float dt, dx, dy;
+uniform sampler2D   inTexture ;
+uniform float       dt, dx, dy;
 
-in vec2 cc, pixPos;
+in vec2 cc, pixPos ;
 
-layout (location = 0) out vec4 ocolor;
+layout (location = 0) out vec4 ocolor ;
 
-#define u color.r
+#define u       color.r
 const float beta = 0.1;
 
-// your codes here for helper function
-
-// your codes here for helper function
-
-// Main body of the shader
 void main() {
-    vec2 size = vec2(textureSize(inTexture, 0)) ;
+    vec2  size  = vec2(textureSize(inTexture, 0)) ;
 
     vec2 ii = vec2(1.,0.)/size ;
     vec2 jj = vec2(0.,1.)/size ;
@@ -96,18 +91,15 @@ void main() {
     // read the color of the pixel
     vec4 color = texture( inTexture , cc ) ;
 
+    // compute left neighbor position
+    vec2 leftPos = fract( cc - vec2( ii.x, 0.0 ) );
+    vec4 leftColor = texture( inTexture, leftPos );
+    float u_left = leftColor.r;
 
-    // your codes here (do not define helper function)
-    vec2 nextX = cc + ii;
-    vec4 nextColor = texture(inTexture, nextX);
-    float u_next = nextColor.r;
-    float du_dx = (u_next - u) / dx;
-    float du_dt = beta * du_dx;
-    float u_new = u + dt * du_dt;
-    ocolor.r = u_new;
-    // your codes here (do not define helper function)
+    // compute new_u
+    float new_u = color.r - beta * (color.r - u_left) * dt / dx;
 
-    // ocolor = color ;
+    ocolor = vec4( new_u, 0., 0., 0. );
     return ;
 }
 </script>
@@ -143,10 +135,11 @@ var env = {
 // ---------------------------------------------------------------
 
 
-
 // defining the textures .................................................
-var fcolor0 = new Abubu.Float32Texture(env.width,env.height) ;
-var scolor0 = new Abubu.Float32Texture(env.width,env.height) ;
+env.fcolor0 = new Abubu.Float32Texture(env.width,env.height) ;
+env.scolor0 = new Abubu.Float32Texture(env.width,env.height) ;
+env.fcolor0.pairable = true ;
+env.scolor0.pairable = true ;
 var texture_num = 1;
 
 env.fcolors = [] ;
@@ -164,16 +157,16 @@ for(var i=0; i<1; i++){
 var init = new Abubu.Solver( {
     fragmentShader  : source('init'),
     targets : {
-        color1 : { location :0, target : fcolor0  } ,
-        color2 : { location :1, target : scolor0  } ,
+        color1 : { location :0, target : env.fcolor0  } ,
+        color2 : { location :1, target : env.scolor0  } ,
     }
 } ) ;
 init.render();
 
 // post processing .......................................................
 var plot = new Abubu.Plot2D({
-    target : fcolor0,
-    prevTarget: scolor0,
+    target : env.fcolor0,
+    prevTarget: env.scolor0,
     channel : 'r',
     minValue : -1.0 ,
     maxValue : 1.0 ,
@@ -194,14 +187,14 @@ function marchUniforms(_inTexture){
 
 var fmarch = new Abubu.Solver({
         fragmentShader : source( 'march' ) ,
-		uniforms : new marchUniforms( fcolor0 ) ,
-        targets : { ocolor : { location : 0, target : scolor0 } }
+		uniforms : new marchUniforms( env.fcolor0 ) ,
+        targets : { ocolor : { location : 0, target : env.scolor0 } }
     } ) ;
 
 var smarch = new Abubu.Solver({
         fragmentShader : source( 'march' ) ,
-  		uniforms : new marchUniforms( scolor0 ) ,
-        targets : { ocolor : { location : 0, target : fcolor0 } }
+  		uniforms : new marchUniforms( env.scolor0 ) ,
+        targets : { ocolor : { location : 0, target : env.fcolor0 } }
     } ) ;
 
 function march(){
@@ -247,8 +240,8 @@ env.saveCsvFile = function(){
 
 
 //IC
-const IC_url = '';
-const T_end = 200;
+const IC_url = './random_sample_t0.csv';
+const T_end = 2;
 //IC
 
 function loadCsv(url) {
@@ -296,15 +289,16 @@ loadCsv(IC_url) ;
 function run(){
     if (env.running){
         for(var i = 0 ; i<env.skip ; i++){
+
+            if (env.time >= T_end){
+                env.running = false ;
+                console.log("Simulation finished!")
+                env.saveCsvFile();
+                break ;
+            }
             march() ;
-            env.usgn.update(env.time) ;
         }
 
-        if (env.time > T_end){
-            env.running = false ;
-            console.log("Simulation finished!")
-            saveCsvFile();
-        }
     }
     plot.render() ;
     requestAnimationFrame(run) ;
@@ -314,14 +308,14 @@ function run(){
 var click = new Abubu.Solver({
     fragmentShader : source( 'click' ) ,
     uniforms : {
-        inTexture : { type : 't', value : fcolor0 } ,
+        inTexture : { type : 't', value : env.fcolor0 } ,
         clickRadius: { type : 'f', value : env.clickRadius } ,
         clickPosition: { type : 'v2', value : env.clickPosition } ,
     } ,
-    targets : { ocolor : { location : 0 , target : scolor0 } }
+    targets : { ocolor : { location : 0 , target : env.scolor0 } }
 } ) ;
 
-var clickCopy = new Abubu.Copy( scolor0, fcolor0 ) ;
+var clickCopy = new Abubu.Copy( env.scolor0, env.fcolor0 ) ;
 
 new Abubu.MouseListener({
     canvas : canvas_1 ,
@@ -351,7 +345,7 @@ function createGui(){
     exe.add(env,'time').listen() ;
     exe.add(env,'skip') ;
     exe.add(env,'initialize') ;
-    exe.add(env,'running').listen() ;
+    exe.add(env,'running') ;
     exe.open() ;
 }
 
@@ -360,4 +354,4 @@ run() ;
 
 </script>
 </body>
-</html>
+</html>     

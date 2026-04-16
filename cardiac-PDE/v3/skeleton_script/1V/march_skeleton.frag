@@ -24,7 +24,8 @@ void main() {
     // read the color of the pixel
     vec4 color = texture( inTexture , cc ) ;
 
-
+    // use fract for periodic condition
+    // for example: vec2 prevX = fract(cc - ii);
     // your codes here (do not define helper function)
 
     // your codes here (do not define helper function)
