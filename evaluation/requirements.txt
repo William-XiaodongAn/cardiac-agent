@@ -1,0 +1,7 @@
+# Evaluation pipeline dependencies
+numpy>=1.24
+scipy>=1.11
+scikit-image>=0.21      # SSIM metric
+matplotlib>=3.7
+pillow>=10.0            # PNG loading from WebGL captures
+playwright>=1.40.0      # headless WebGL capture
