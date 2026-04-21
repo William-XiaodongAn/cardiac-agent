@@ -1,9 +1,10 @@
+
+#version 300 es
 precision highp float;
 precision highp int;
 
 uniform sampler2D inTexture;
 uniform float dt, dx, dy;
-uniform float D_u, D_v, k;
 
 in vec2 cc, pixPos;
 
@@ -12,8 +13,12 @@ layout (location = 0) out vec4 ocolor;
 #define u       color.r
 #define v       color.g
 
+const float D_u = 0.001;
+const float D_v = 0.005;
+const float k = 0.005;
+
 void main() {
-    vec2 size = textureSize(inTexture, 0);
+    vec2 size = vec2(textureSize(inTexture, 0));
     vec2 ii = vec2(1.,0.)/size;
     vec2 jj = vec2(0.,1.)/size;
 

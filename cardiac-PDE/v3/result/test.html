@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+<head>
+    <script src='https://abubujs.org/libs/Abubu.latest.js' type='text/javascript'></script>
+</head>
+<body>
+    <canvas id=canvas_1 width=512 height=512 style="border: 1px solid black"></canvas>
+
+<script id='march' type='shader'>#version 300 es
+precision highp float;
+precision highp int;
+
+uniform sampler2D   inTexture;
+uniform float       dt, dx;
+
+in vec2 cc;
+layout (location = 0) out vec4 ocolor;
+
+// Constants
+const float D      = 0.001;
+const float tau_pv = 13.03;
+const float tau_v1 = 1250.0;
+const float tau_v2 = 19.6;
+const float tau_pw = 800.0;
+const float tau_mw = 40.0;
+const float tau_0  = 12.5;
+const float tau_r  = 33.25;
+const float tau_si = 29.0;
+const float k      = 10.0;
+const float V_csi  = 0.85;
+const float V_c    = 0.13;
+const float V_v    = 0.04;
+const float tau_d  = 0.25;
+
+float H(float x) { return x >= 0.0 ? 1.0 : 0.0; }
+
+void main() {
+    vec2 size = vec2(textureSize(inTexture, 0));
+    vec2 texel = 1.0 / size;
+
+    // Current State
+    vec4 color = texture(inTexture, cc);
+    float u = color.r;
+    float v = color.g;
+    float w = color.b;
+
+    // --- High Accuracy Laplacian (Neumann) ---
+    float u_l = texture(inTexture, cc + vec2(-texel.x, 0.0)).r;
+    float u_r = texture(inTexture, cc + vec2(texel.x, 0.0)).r;
+    float u_d = texture(inTexture, cc + vec2(0.0, -texel.y)).r;
+    float u_u = texture(inTexture, cc + vec2(0.0, texel.y)).r;
+
+    // Boundary clamping for stability
+    if(cc.x < texel.x) u_l = u;
+    if(cc.x > 1.0 - texel.x) u_r = u;
+    if(cc.y < texel.y) u_d = u;
+    if(cc.y > 1.0 - texel.y) u_u = u;
+
+    float laplacianU = (u_l + u_r + u_u + u_d - 4.0 * u) / (dx * dx);
+
+    // --- Fenton-Karma Currents ---
+    float h_vc = H(u - V_c);
+    float Ifi = -v * h_vc * (u - V_c) * (1.0 - u) / tau_d;
+    float Iso = (u * (1.0 - h_vc) / tau_0) + (h_vc / tau_r);
+    float Isi = -w * (1.0 + tanh(k * (u - V_csi))) / (2.0 * tau_si);
+
+    // --- State Updates ---
+    // 1. Update U (Forward Euler for diffusion + reaction)
+    float du = D * laplacianU - (Ifi + Iso + Isi);
+    float next_u = u + dt * du;
+
+    // 2. Update V (Rush-Larsen for exponential stability)
+    float v_inf = (u < V_c) ? 1.0 : 0.0;
+    float tau_v = (u < V_c) ? ((u < V_v) ? tau_v1 : tau_v2) : tau_pv;
+    float next_v = v_inf + (v - v_inf) * exp(-dt / tau_v);
+
+    // 3. Update W (Rush-Larsen)
+    float w_inf = (u < V_c) ? 1.0 : 0.0;
+    float tau_w = (u < V_c) ? tau_mw : tau_pw;
+    float next_w = w_inf + (w - w_inf) * exp(-dt / tau_w);
+
+    ocolor = vec4(next_u, next_v, next_w, 1.0);
+}
+</script>
+
+<script id='init' type='shader'>#version 300 es
+precision highp float;
+in vec2 cc;
+layout (location = 0) out vec4 c1;
+layout (location = 1) out vec4 c2;
+void main() {
+    vec4 color = vec4(0.0, 1.0, 1.0, 1.0);
+    c1 = color; c2 = color;
+}
+</script>
+
+<script id='click' type='x-shader-fragment'>#version 300 es
+precision highp float;
+uniform sampler2D inTexture;
+uniform vec2 clickPosition;
+uniform float clickRadius;
+in vec2 cc;
+layout (location = 0) out vec4 ocolor;
+void main() {
+    vec4 color = texture(inTexture, cc);
+    if (length(clickPosition - cc) < clickRadius) {
+        color.r = 1.0;
+    }
+    ocolor = color;
+}
+</script>
+
+<script>
+function source(id){ return document.getElementById(id).text; }
+
+var env = {
+    dt : 0.1, // Increased dt thanks to Rush-Larsen stability
+    time : 0,
+    dx : 0.025, 
+    running : false,
+    width : 512,
+    height : 512,
+    clickRadius : 0.05,
+    clickPosition : [0.5, 0.5],
+    skip : 20,
+};
+
+const canvas_1 = document.getElementById('canvas_1');
+env.fcolor0 = new Abubu.Float32Texture(env.width, env.height, {pairable: true});
+env.scolor0 = new Abubu.Float32Texture(env.width, env.height, {pairable: true});
+
+var init = new Abubu.Solver({
+    fragmentShader: source('init'),
+    targets: { color1: {location:0, target:env.fcolor0}, color2: {location:1, target:env.scolor0} }
+});
+init.render();
+
+var plot = new Abubu.Plot2D({
+    target: env.fcolor0, channel: 'r', minValue: 0, maxValue: 1,
+    colorbar: true, canvas: canvas_1
+});
+
+var fmarch = new Abubu.Solver({
+    fragmentShader: source('march'),
+    uniforms: { inTexture: {type:'t', value:env.fcolor0}, dt: {type:'f', value:env.dt}, dx: {type:'f', value:env.dx} },
+    targets: { ocolor: {location:0, target:env.scolor0} }
+});
+
+var smarch = new Abubu.Solver({
+    fragmentShader: source('march'),
+    uniforms: { inTexture: {type:'t', value:env.scolor0}, dt: {type:'f', value:env.dt}, dx: {type:'f', value:env.dx} },
+    targets: { ocolor: {location:0, target:env.fcolor0} }
+});
+
+// Click logic
+var click = new Abubu.Solver({
+    fragmentShader: source('click'),
+    uniforms: { inTexture: {type:'t', value:env.fcolor0}, clickRadius: {type:'f', value:env.clickRadius}, clickPosition: {type:'v2', value:env.clickPosition} },
+    targets: { ocolor: {location:0, target:env.scolor0} }
+});
+var clickCopy = new Abubu.Copy(env.scolor0, env.fcolor0);
+
+new Abubu.MouseListener({
+    canvas: canvas_1, event: 'drag',
+    callback: function(e){
+        click.uniforms.clickPosition.value = e.position;
+        click.render();
+        clickCopy.render();
+    }
+});
+
+function run(){
+    if (env.running){
+        for(var i=0; i<env.skip; i++){
+            fmarch.render();
+            smarch.render();
+            env.time += env.dt * 2;
+        }
+    }
+    plot.render();
+    requestAnimationFrame(run);
+}
+
+var gui = new Abubu.Gui();
+var panel = gui.addPanel({width:300});
+panel.add(env, 'time').listen();
+panel.add(env, 'running');
+panel.add(env, 'skip', 1, 100);
+run();
+</script>
+</body>
+</html>
