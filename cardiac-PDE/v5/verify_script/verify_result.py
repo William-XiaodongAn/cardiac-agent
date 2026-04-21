@@ -10,13 +10,13 @@ from functools import partial
 import re
 import threading
 
-def load_IC(simulation_file: str, IC_file: str, T_end: float = 100.0) -> None:
+def load_IC(simulation_file: str, IC_file_relative: str, T_end: float = 100.0) -> None:
     """
     Load Initial condition file to simulation file
 
     Args:
         simulation_file (str): The relative path to the simulation file (html).
-        IC_file (str): The path to the initial condition file (csv), relative to the simulation file.
+        IC_file_relative (str): The path to the initial condition file (csv), relative to the simulation file.
         T_end (float): The end time value. Defaults to 100.0.
     """
     with open(simulation_file, 'r') as f:
@@ -28,7 +28,7 @@ def load_IC(simulation_file: str, IC_file: str, T_end: float = 100.0) -> None:
     
     # The replacement string with your new values
     replacement_content = (
-        f"const IC_url = '{IC_file}';\n"
+        f"const IC_url = '{IC_file_relative}';\n"
         f"const T_end = {T_end};"
     )
     
@@ -43,9 +43,9 @@ def load_IC(simulation_file: str, IC_file: str, T_end: float = 100.0) -> None:
     with open(simulation_file, 'w') as f:
         f.write(new_content)
 
-def verify_result(simulation_file: str, IC_file: str, T_end: float = 100.0) -> None:
+def verify_result(simulation_file: str, IC_file_relative: str, T_end: float,download_folder:str) -> None:
 
-    load_IC(simulation_file,IC_file,T_end)
+    load_IC(simulation_file,IC_file_relative,T_end)
     
     dir_path = os.path.dirname(simulation_file)
     simulation_folder = os.path.abspath(os.path.basename(dir_path))
@@ -53,7 +53,7 @@ def verify_result(simulation_file: str, IC_file: str, T_end: float = 100.0) -> N
     PORT = 8001
     TARGET_MESSAGE = "Simulation finished!"
     URL = f"http://localhost:{PORT}/updated_skeleton.html"
-    download_folder = os.path.join(os.getcwd(), "simulation_downloads")
+    download_folder = os.path.join(os.getcwd(), download_folder)
     if not os.path.exists(download_folder):
         os.makedirs(download_folder)
         print(f"Created directory: {download_folder}")    
