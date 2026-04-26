@@ -21,6 +21,10 @@ class LLMFactory:
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.anthropic_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         self.gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        self.ollama_client = ollama.Client(
+                    host="https://ollama.com",
+                    headers={'Authorization': f"Bearer {os.getenv('OLLAMA_API_KEY')}"}
+                )
 
     def ask_gpt(self, model, system_prompt, user_prompt):
         response = self.openai_client.chat.completions.create(
@@ -58,7 +62,7 @@ class LLMFactory:
         
         messages.append({'role': 'user', 'content': user_prompt})
         
-        response = ollama.chat(model=model, messages=messages)
+        response = self.ollama_client.chat(model=model, messages=messages)
         return response['message']['content']
 
 # --- The Router Function ---
@@ -66,7 +70,7 @@ def chat_with(model_name, system_prompt, user_prompt):
     factory = LLMFactory()
     m_lower = model_name.lower()
     
-    if "gpt" in m_lower:
+    if "gt" in m_lower:
         return factory.ask_gpt(model_name, system_prompt, user_prompt)
     elif "claude" in m_lower:
         return factory.ask_claude(model_name, system_prompt, user_prompt)
@@ -110,6 +114,26 @@ def parse_agent(LLM:str,pde_name:str,pde_paras:dict):
         f.write(response_text)
     
     print(f"Parsed response saved to ./result/{LLM}/{pde_name}/parsed_resp.json")
+
+def check_parsed_response(LLM:str,pde_name:str):
+    '''
+    Check if the parsed response json file is valid and contains all necessary information.
+    '''
+    if not os.path.exists(f"./result/{LLM}/{pde_name}/parsed_resp.json"):
+        return False
+    with open(f"./result/{LLM}/{pde_name}/parsed_resp.json", "r", encoding="utf-8") as f:
+        parsed_resp = json.load(f)
+    
+    required_dict = {"PDEs": str, "number_of_state_variables": int, "texture_size": int, "spatial_step": float, "domain_size": float, "temporal_step": float, "time_horizon": float, "boundary_conditions": object, "parameter_values": dict}
+    for key in required_dict.keys():
+        if key not in parsed_resp:
+            return False
+        val = parsed_resp[key]
+        expected_type = required_dict[key]
+        if not isinstance(val, expected_type):
+            return False
+    print(f"Parsed response for {LLM} and {pde_name} is valid.")
+    return True
 
 def skeleton_prepare(LLM:str,pde_name:str):
     '''
@@ -199,8 +223,6 @@ def verify_agent(LLM,pde_name,simulation_file_path,IC_file_path,download_folder,
         result_data = np.loadtxt(csv_path, delimiter=',')
         # skip first two data points
         result_data = result_data[2:]
-        # the remaining data is r,g,b,a,r,g,b,a,..., and we only need r channel
-        result_data = result_data[::4]
         return result_data
     LLM_original_name = LLM
     LLM = re.sub(r'[.\-:]', '_', LLM)
@@ -225,7 +247,7 @@ def verify_agent(LLM,pde_name,simulation_file_path,IC_file_path,download_folder,
     else:
         result = os.path.join(download_folder, "result.csv")
         
-        result_data = load_csv(result)
+        result_data = np.loadtxt(result, delimiter=',')
         reference_data = load_csv(solution_file_path)
         
         rmse = np.sqrt(np.mean((result_data - reference_data) ** 2))
@@ -267,6 +289,7 @@ def debug_agent(LLM,pde_name,log_file_path,bugged_html_path,debugged_html_path):
         response_text = response_text[:-3]
     
     # save to html
+    os.makedirs(os.path.dirname(debugged_html_path), exist_ok=True)
     with open(f"./result/{LLM}/{pde_name}/skeleton.html", 'r') as f:
         html_content = f.read()
     updated_html = html_content.replace('{{MARCH_SHADER_CODE}}', response_text)
@@ -314,7 +337,8 @@ def main():
         solution_folder = f"./data/{args.pde}/train"
         solution_files = [f for f in os.listdir(solution_folder) if f.endswith(('.csv')) and f.startswith("solution_")] # solution_0.csv,solution_1.csv,...
         
-        parse_agent(args.LLM,args.pde,pde_paras)
+        while not check_parsed_response(LLM_sanitized,args.pde):
+            parse_agent(args.LLM,args.pde,pde_paras)
         simulation_file_path = code_agent(args.LLM,args.pde)
         debugged_file_path = simulation_file_path
         debugged_times_used = 0
@@ -338,10 +362,13 @@ def main():
                 debugged_times_used += 1
                 bugged_file_path = debugged_file_path
                 debugged_file_path = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}/simulation.html"
-                download_folder = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}"
-                log_file_path = f"{download_folder}/log.txt"
                 debug_agent(args.LLM,args.pde,log_file_path,bugged_file_path,debugged_file_path)
-                normalized_rmse = verify_agent(args.LLM,args.pde,debugged_file_path,IC_file,download_folder,log_file_path,solution_file)
+                
+                # Update download_folder and log_file_path for the new verification
+                download_folder = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}"
+                new_log_file_path = f"{download_folder}/log.txt"
+                normalized_rmse = verify_agent(args.LLM,args.pde,debugged_file_path,IC_file,download_folder,new_log_file_path,solution_file)
+                log_file_path = new_log_file_path  # Update for next debug iteration if needed
 
             nrmse_list.append(normalized_rmse)
         print(debugged_times_used, nrmse_list)

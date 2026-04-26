@@ -73,40 +73,36 @@ void main() {
 precision highp float;
 precision highp int;
 
-uniform sampler2D   inTexture ;
-uniform float       dt, dx, dy;
+uniform sampler2D inTexture;
+uniform float dt, dx, dy;
 
-in vec2 cc, pixPos ;
+in vec2 cc, pixPos;
 
-layout (location = 0) out vec4 ocolor ;
+layout (location = 0) out vec4 ocolor;
 
-#define u       color.r
+#define u color.r
 const float beta = 0.1;
 
+// Helper function: read value from texture with periodic wrap
+float sampleU(vec2 texCoord, vec2 offset) {
+    vec2 wrapped = fract(texCoord + offset);
+    return texture(inTexture, wrapped).r;
+}
+
 void main() {
-    vec2  size  = vec2(textureSize(inTexture, 0)) ;
+    vec4 color = texture(inTexture, cc);
+    float u_curr = color.r;
 
-    vec2 ii = vec2(1.,0.)/size ;
-    vec2 jj = vec2(0.,1.)/size ;
+    vec2 texSize = vec2(textureSize(inTexture, 0));
+    vec2 ii = vec2(1.0, 0.0) / texSize; 
+    // left neighbor (i-1)
+    float u_left = sampleU(cc, -ii);
 
-    // read the color of the pixel
-    vec4 color = texture( inTexture , cc ) ;
+    // explicit upwind discretisation: u^{n+1} = u^n - dt*beta*(u_i - u_{i-1})/dx
+    float u_new = u_curr - dt * beta * (u_curr - u_left) / dx;
 
-    // compute the right neighbor position
-    vec2 rightPos = fract( cc + ii );
-    vec4 u_right = texture( inTexture, rightPos );
-
-    // compute spatial derivative
-    float du_dx = (u_right.r - color.r) / dx;
-
-    // compute delta_u
-    float delta_u = -beta * dt * du_dx;
-
-    // update the color
-    vec4 new_color = color;
-    new_color.r = color.r + delta_u;
-
-    ocolor = new_color;
+    color.r = u_new;
+    ocolor = color;
 }
 </script>
 
@@ -128,7 +124,7 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 0.001 ,
+        dt : 0.0005 ,
         time : 0 ,
         dx : 0.0009765625,
         running : false ,
@@ -211,38 +207,28 @@ function march(){
 }
 
 env.csvFileName = 'result.csv' ;
-env.saveCsvFile = function(){
-    var link = document.createElement('a') ;
-    var data = "data:text;charset=utf-8," +
-        env.width + ',' + 
-        env.height ;
-    var width   = env.width ;
-    var height = env.height ;
-    var fvals = {} ;
-    for(let i=0;i<texture_num; i++){
-        let color = "fcolor"+i ;
-        fvals[color] = env[color].value ;
-    }
+env.saveCsvFile = function() {
+    data = env.fcolor0.value.toString() ;
 
-    for(var i=0 ; i<(width*height) ; i++){
-        var indx = i*4 ;
-        let rows = "" ;
-        for( let j=0; j<texture_num; j++){
-            name = "fcolor"+j ;
-            rows += ',' + 
-            fvals[name][indx  ].toExponential()+ ',' +
-            fvals[name][indx+1].toExponential()+ ',' +
-            fvals[name][indx+2].toExponential()+ ',' +
-            fvals[name][indx+3].toExponential() ;
-        }
-        data += rows ;
-    }
-    
-    var csv = encodeURI( data ) ;
-    link.setAttribute( 'href', csv ) ;
-    link.setAttribute( 'download', env.csvFileName ) ;
-    link.click() ;
-} ;
+    // 3. CRITICAL: Pass the array directly to the Blob. 
+    // This avoids creating one giant mega-string in memory.
+    const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    const name_download = 'result.csv';
+
+    link.href = url;
+    link.download = name_download;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url); // Cleanup
+};
+
 
 
 //IC

@@ -10,6 +10,7 @@ from functools import partial
 import re
 import threading
 import shutil
+from pathlib import Path
 
 def load_IC(simulation_file_path: str, IC_file_path: str, T_end: float = 100.0) -> None:
     """
@@ -52,42 +53,51 @@ def load_IC(simulation_file_path: str, IC_file_path: str, T_end: float = 100.0) 
     # Write the modified content back to the file
     with open(simulation_file_path, 'w') as f:
         f.write(new_content)
+    return simulation_file_path
 
 def verify_result(simulation_file_path: str, IC_file_path: str, T_end: float,download_folder:str) -> None:
 
-    load_IC(simulation_file_path,IC_file_path,T_end)
+    simulation_file_path = load_IC(simulation_file_path,IC_file_path,T_end)
     
-    simulation_file = os.path.join(os.path.dirname(IC_file_path), 'simulation.html')
-    
-    dir_path = os.path.dirname(simulation_file_path)
-    simulation_folder = os.path.abspath(os.path.basename(dir_path))
+    # Get the directory where simulation.html is located
+    simulation_directory = os.path.dirname(simulation_file_path)
     
     PORT = 8001
     TARGET_MESSAGE = "Simulation finished!"
-    URL = f"http://localhost:{PORT}/updated_skeleton.html"
+    URL = f"http://localhost:{PORT}/simulation.html"
     
-    os.makedirs(download_folder, exist_ok=True)
+    download_path = Path(download_folder).resolve()
+    download_path.mkdir(parents=True, exist_ok=True)
         
     def start_server():
         """Starts a local server in the specified directory."""
-        handler_with_path = partial(SimpleHTTPRequestHandler, directory=simulation_folder)
+        handler_with_path = partial(SimpleHTTPRequestHandler, directory=simulation_directory)
 
         TCPServer.allow_reuse_address = True
         with TCPServer(("", PORT), handler_with_path) as httpd:
-            print(f"Serving {simulation_file} at {URL}")
+            print(f"Serving {simulation_file_path} at {URL}")
             httpd.serve_forever()
         
     server_thread = threading.Thread(target=start_server, daemon=True)
     server_thread.start() # Moves to the next line of code immediately
+    
+    # Convert download_folder to absolute path with forward slashes for Chrome
+    abs_download_folder = str(download_path)
+    print(f"Download folder set to: {abs_download_folder}")
+    
     # 2. Configure Chrome
     options = webdriver.ChromeOptions()
     prefs = {
-    "download.default_directory": download_folder, # Sets the save path
+    "download.default_directory": abs_download_folder,  # Use absolute path with forward slashes
     "download.prompt_for_download": False,          # Skips the 'Save As' popup
     "download.directory_upgrade": True,
-    "profile.default_content_setting_values.automatic_downloads": 1 # Allows multiple downloads
+    "profile.default_content_setting_values.automatic_downloads": 1, # Allows multiple downloads
+    "safebrowsing.enabled": True, 
+    "download.extensions_to_open": ""
     }
     options.add_experimental_option("prefs", prefs)    
+    options.add_argument("--safebrowsing-disable-download-protection")
+    options.add_argument("--safebrowsing-disable-extension-blacklist")
     options.set_capability('goog:loggingPrefs', {'browser': 'ALL'})
     # Optional: This keeps the driver logs quiet in your terminal
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -98,29 +108,22 @@ def verify_result(simulation_file_path: str, IC_file_path: str, T_end: float,dow
         # 3. Open the localhost URL
         driver.get(URL)
         print("Simulation started on localhost. Monitoring console...")
-        # wait for 10 s
-        #time.sleep(10)
-        # --- NEW: Automatically click the Solve/Pause button ---
-        try:
-            # 1. Look for the span containing 'Solve/Pause'
-            # We use '*' because dat.GUI doesn't use standard <button> tags
-            xpath_selector = "//*[contains(text(), 'running')]"
-            
-            # 2. Wait for the element to be present and visible
-            solve_element = WebDriverWait(driver, 2).until(
-                EC.visibility_of_element_located((By.XPATH, xpath_selector))
-            )
-            
-            # 3. Click the element directly via Selenium
-            solve_element.click()
-            print("Clicked 'running' GUI element successfully.")
-        except Exception as e:
-            print(f"Could not find or click the button automatically: {e}")
+        time.sleep(2)  # Wait for page to fully load and GUI to initialize
+        
+
+        driver.execute_script("window.env.solve();")
+        print("Started simulation using JavaScript injection.")
+
         # -------------------------------------------------------
+        error_found = None
         running = True
         while running:
             logs = driver.get_log('browser')
             for entry in logs:
+                # Skip harmless favicon.ico 404 errors
+                if 'favicon.ico' in entry['message']:
+                    continue
+                    
                 if entry['level'] == 'SEVERE':
                     print(entry)
                     error_found = logs

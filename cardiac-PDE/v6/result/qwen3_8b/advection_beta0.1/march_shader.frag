@@ -9,15 +9,7 @@ in vec2 cc, pixPos ;
 layout (location = 0) out vec4 ocolor ;
 
 #define u       color.r
-    const float beta = 0.1;
-
-vec2 periodicPos(vec2 pos, float step) {
-    return vec2(fract(pos.x - step), pos.y);
-}
-
-vec2 periodicPos(vec2 pos, float step) {
-    return vec2(fract(pos.x + step), pos.y);
-}
+const float beta = 0.1;
 
 void main() {
     vec2  size  = vec2(textureSize(inTexture, 0)) ;
@@ -28,15 +20,19 @@ void main() {
     // read the color of the pixel
     vec4 color = texture( inTexture , cc ) ;
 
-    // Compute left neighbor position
-    vec2 leftPos = periodicPos(cc, dx);
-    vec4 leftColor = texture(inTexture, leftPos);
+    // compute the right neighbor position
+    vec2 rightPos = fract( cc + ii );
+    vec4 u_right = texture( inTexture, rightPos );
 
-    // Compute new value
-    float u_current = color.r;
-    float u_left = leftColor.r;
-    float u_new = u_current - beta * dt / dx * (u_current - u_left);
+    // compute spatial derivative
+    float du_dx = (u_right.r - color.r) / dx;
 
-    ocolor.r = u_new;
-    return ;
+    // compute delta_u
+    float delta_u = -beta * dt * du_dx;
+
+    // update the color
+    vec4 new_color = color;
+    new_color.r = color.r + delta_u;
+
+    ocolor = new_color;
 }

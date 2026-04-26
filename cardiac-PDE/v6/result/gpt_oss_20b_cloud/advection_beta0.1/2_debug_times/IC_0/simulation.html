@@ -73,40 +73,25 @@ void main() {
 precision highp float;
 precision highp int;
 
-uniform sampler2D   inTexture ;
-uniform float       dt, dx, dy;
-
-in vec2 cc, pixPos ;
-
-layout (location = 0) out vec4 ocolor ;
-
-#define u       color.r
+uniform sampler2D inTexture;
+uniform float dt, dx, dy;
+in vec2 cc;
+layout(location = 0) out vec4 ocolor;
 const float beta = 0.1;
 
+vec4 samplePeriodic(sampler2D tex, vec2 coord, vec2 delta) {
+    return texture(tex, fract(coord - delta));
+}
+
 void main() {
-    vec2  size  = vec2(textureSize(inTexture, 0)) ;
-
-    vec2 ii = vec2(1.,0.)/size ;
-    vec2 jj = vec2(0.,1.)/size ;
-
-    // read the color of the pixel
-    vec4 color = texture( inTexture , cc ) ;
-
-    // compute the right neighbor position
-    vec2 rightPos = fract( cc + ii );
-    vec4 u_right = texture( inTexture, rightPos );
-
-    // compute spatial derivative
-    float du_dx = (u_right.r - color.r) / dx;
-
-    // compute delta_u
-    float delta_u = -beta * dt * du_dx;
-
-    // update the color
-    vec4 new_color = color;
-    new_color.r = color.r + delta_u;
-
-    ocolor = new_color;
+    vec2 texSize = vec2(textureSize(inTexture, 0));
+    vec2 invSize = 1.0 / texSize;
+    vec2 delta = vec2(1.0, 0.0) * invSize;
+    float u_cur = texture(inTexture, cc).r;
+    float u_prev = samplePeriodic(inTexture, cc, delta).r;
+    float dudx = (u_cur - u_prev) / dx;
+    float u_new = u_cur + dt * (-beta * dudx);
+    ocolor = vec4(u_new, 0.0, 0.0, 1.0);
 }
 </script>
 
@@ -128,12 +113,12 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 0.001 ,
+        dt : 0.0005 ,
         time : 0 ,
         dx : 0.0009765625,
         running : false ,
-		width : 1024,
-		height : 1024,
+		width : None,
+		height : None,
 		clickRadius : 0.06 ,
 		clickPosition  : [0.,0.] ,
 		skip : 40,
@@ -211,38 +196,44 @@ function march(){
 }
 
 env.csvFileName = 'result.csv' ;
-env.saveCsvFile = function(){
-    var link = document.createElement('a') ;
-    var data = "data:text;charset=utf-8," +
-        env.width + ',' + 
-        env.height ;
-    var width   = env.width ;
-    var height = env.height ;
-    var fvals = {} ;
-    for(let i=0;i<texture_num; i++){
-        let color = "fcolor"+i ;
-        fvals[color] = env[color].value ;
+env.saveCsvFile = function() {
+    var rows = [env.width + ',' + env.height]; // Start with header
+    var width = env.width;
+    var height = env.height;
+    
+    // Use an array to collect data (faster than string concatenation)
+    for (var i = 0; i < (width * height); i++) {
+        var indx = i * 4;
+        var row = [];
+        for (let j = 0; j < texture_num; j++) {
+            let name = "fcolor" + j;
+            let vals = env[name].value;
+            row.push(
+                vals[indx].toExponential(),
+                vals[indx + 1].toExponential(),
+                vals[indx + 2].toExponential(),
+                vals[indx + 3].toExponential()
+            );
+        }
+        rows.push(row.join(','));
     }
 
-    for(var i=0 ; i<(width*height) ; i++){
-        var indx = i*4 ;
-        let rows = "" ;
-        for( let j=0; j<texture_num; j++){
-            name = "fcolor"+j ;
-            rows += ',' + 
-            fvals[name][indx  ].toExponential()+ ',' +
-            fvals[name][indx+1].toExponential()+ ',' +
-            fvals[name][indx+2].toExponential()+ ',' +
-            fvals[name][indx+3].toExponential() ;
-        }
-        data += rows ;
-    }
+    // Create a Blob from the array of strings
+    var blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob); // Create a temporary local URL
     
-    var csv = encodeURI( data ) ;
-    link.setAttribute( 'href', csv ) ;
-    link.setAttribute( 'download', env.csvFileName ) ;
-    link.click() ;
-} ;
+    var link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', env.csvFileName);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up the URL to free memory
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+};
 
 
 //IC

@@ -1,0 +1,10 @@
+[INFO] 1777240909607 - https://abubujs.org/libs/Abubu.latest.js 14591:8 "***********************************"
+[INFO] 1777240909607 - https://abubujs.org/libs/Abubu.latest.js 14592:8 "Abubu " "v6.9.04"
+[INFO] 1777240909607 - https://abubujs.org/libs/Abubu.latest.js 14593:8 "Updated on" "Wed 20 Sep 2023 15:53:43 (EDT)"
+[INFO] 1777240909607 - https://abubujs.org/libs/Abubu.latest.js 14594:8 "Developed by Abouzar Kaboudian!"
+[INFO] 1777240909607 - https://abubujs.org/libs/Abubu.latest.js 14595:8 "For support email: abouzar.kaboudian@physics.gatech.edu"
+[INFO] 1777240909607 - https://abubujs.org/libs/Abubu.latest.js 14596:8 "***********************************"
+[INFO] 1777240909631 - https://abubujs.org/libs/Abubu.latest.js 14632:12 "WebGL 2.0 context successfully initialized!"
+[INFO] 1777240909631 - https://abubujs.org/libs/Abubu.latest.js 27308:12 "Loaded the library without using require.js..."
+[SEVERE] 1777240909632 - http://localhost:8001/simulation.html 127:10 Uncaught ReferenceError: None is not defined
+[SEVERE] 1777240911636 - http://localhost:8001/favicon.ico - Failed to load resource: the server responded with a status of 404 (File not found)
