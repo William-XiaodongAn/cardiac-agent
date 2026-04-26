@@ -9,18 +9,24 @@ from selenium.webdriver.support import expected_conditions as EC
 from functools import partial
 import re
 import threading
+import shutil
 
-def load_IC(simulation_file: str, IC_file_relative: str, input_paras: dict, T_end: float = 100.0) -> None:
+def load_IC(simulation_file_path: str, IC_file_path: str, T_end: float = 100.0) -> None:
     """
     Load Initial condition file to simulation file
 
     Args:
         simulation_file (str): The relative path to the simulation file (html).
-        IC_file_relative (str): The path to the initial condition file (csv), relative to the simulation file.
-        input_paras (dict): A dictionary containing the parameters for the simulation.
+        IC_file (str): The path to the initial condition file (csv), relative to the simulation file.
         T_end (float): The end time value. Defaults to 100.0.
     """
-    with open(simulation_file, 'r') as f:
+    # first, copy simulation file to the same folder as IC file.
+    destination = os.path.join(os.path.dirname(IC_file_path), 'simulation.html')
+    shutil.copy2(simulation_file_path, destination)
+    
+    simulation_file_path = destination
+    
+    with open(simulation_file_path, 'r') as f:
         content = f.read()
 
     # Regex pattern to find the content between //IC markers
@@ -28,8 +34,9 @@ def load_IC(simulation_file: str, IC_file_relative: str, input_paras: dict, T_en
     pattern = r'(//IC\n)(.*?)(\n//IC)'
     
     # The replacement string with your new values
+    IC_file_name = os.path.basename(IC_file_path)
     replacement_content = (
-        f"const IC_url = '{IC_file_relative}';\n"
+        f"const IC_url = '{IC_file_name}';\n"
         f"const T_end = {T_end};"
     )
 
@@ -42,32 +49,24 @@ def load_IC(simulation_file: str, IC_file_relative: str, input_paras: dict, T_en
         flags=re.DOTALL
     )
     
-    # enter the input_paras values
-    for k, value in input_paras.items():
-        new_content = new_content.replace({{{{{k}}}}}, str(value))
-        
-    # save it to a temp file at same location as the simulation file
-    loc = os.path.dirname(simulation_file)
-    temp_file = os.path.join(loc, 'simulation_temp.html')
-    with open(temp_file, 'w') as f:
+    # Write the modified content back to the file
+    with open(simulation_file_path, 'w') as f:
         f.write(new_content)
 
-def verify_result(simulation_file: str, IC_file_relative: str, input_paras: dict, T_end: float,download_folder:str) -> None:
+def verify_result(simulation_file_path: str, IC_file_path: str, T_end: float,download_folder:str) -> None:
 
-    load_IC(simulation_file,IC_file_relative,input_paras,T_end)
+    load_IC(simulation_file_path,IC_file_path,T_end)
     
-    simulation_file = os.path.join(os.path.dirname(simulation_file), 'simulation_temp.html')
+    simulation_file = os.path.join(os.path.dirname(IC_file_path), 'simulation.html')
     
-    dir_path = os.path.dirname(simulation_file)
+    dir_path = os.path.dirname(simulation_file_path)
     simulation_folder = os.path.abspath(os.path.basename(dir_path))
     
     PORT = 8001
     TARGET_MESSAGE = "Simulation finished!"
     URL = f"http://localhost:{PORT}/updated_skeleton.html"
-    download_folder = os.path.join(os.getcwd(), download_folder)
-    if not os.path.exists(download_folder):
-        os.makedirs(download_folder)
-        print(f"Created directory: {download_folder}")    
+    
+    os.makedirs(download_folder, exist_ok=True)
         
     def start_server():
         """Starts a local server in the specified directory."""

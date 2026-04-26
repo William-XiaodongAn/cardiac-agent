@@ -1,3 +1,5 @@
 .env
 *.hdf5
 *.csv
+*.npy
+*.h5

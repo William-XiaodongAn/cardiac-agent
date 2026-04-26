@@ -144,3 +144,8 @@ Model Parameters are:
 - Use No-Flux (Neumann) boundary conditions.
 
 '''
+
+advection_beta0_1 = advection
+advection_beta1_0 = advection
+burgers_nu_0_001 = burgers
+burgers_nu_1_0 = burgers

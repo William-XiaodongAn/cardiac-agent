@@ -77,9 +77,9 @@ def chat_with(model_name, system_prompt, user_prompt):
         return factory.ask_ollama(model_name, user_prompt)
 
 
-def parsing(model : str,pde_name : str, paras = {'nu':0.1,'p':0.1}):
+def parsing(model : str,pde_name : str, input_paras = {'nu':0.1,'p':0.1}):
     pde_description = getattr(pde_descriptions, pde_name)
-    pde_description = pde_description.format(**paras)
+    pde_description = pde_description.format(**input_paras)
     system_prompt = system_prompt.system_prompt
     user_prompt = parse_prompt.format(
         user_input=pde_description,
@@ -97,7 +97,7 @@ def parsing(model : str,pde_name : str, paras = {'nu':0.1,'p':0.1}):
     with open("./result/parsed_resp.json", "w", encoding="utf-8") as f:
         f.write(response_text)
 
-def coding(model:str,pde_name:str):
+def coding(model:str,pde_name:str,input_paras = {'nu':0.1,'p':0.1}):
     with open("./result/parsed_resp.json", "r") as f:
         parsed_resp = json.load(f)
     number_of_state_variables = parsed_resp["number_of_state_variables"]
@@ -109,10 +109,10 @@ def coding(model:str,pde_name:str):
     parameter_values = parsed_resp["parameter_values"]
     parameter_values
     parameter_str = "\n".join([
-        f"    const float {k:} = {v};" 
+        f"    const float {k} = {v};" if k not in input_paras else f"    const float {k} = {{{{{k}}}}};"
         for k, v in parameter_values.items()
-    ])
-
+        ])
+    
     coding_skeleton_file = f"./skeleton_script/{parsed_resp['number_of_state_variables']}V/skeleton.html"
     # Load the file
     with open(coding_skeleton_file, 'r') as f:
@@ -157,7 +157,7 @@ def coding(model:str,pde_name:str):
     with open(f'./result/{model}/{pde_name}/simulation.html', 'w') as f:
         f.write(updated_html)
         
-def verifying(model:str,pde_name:str,IC_file_relative:str,simulation_file:str,T_end:float,log_file:str,reference_data):
+def verifying(model:str,pde_name:str,input_paras,IC_file_relative:str,simulation_file:str,T_end:float,log_file:str,reference_data):
     # create download folder if not exist
     download_folder = f"simulation_downloads/{model}/{pde_name}/{IC_file_relative}"
     if not os.path.exists(download_folder):
@@ -241,7 +241,7 @@ def refining(model:str,pde_name:str,IC_file_relative:str,simulation_file:str,T_e
     with open(f'./result/{model}/{pde_name}/simulation(refined).html', 'w') as f:
         f.write(response_text)
     
-    nrmse_refined = verifying(model,pde_name,IC_file_relative,f'./result/{model}/{pde_name}/simulation(refined).html',T_end,log_file,reference_data)
+    nrmse_refined = verifying(model,pde_name,input_paras,IC_file_relative,f'./result/{model}/{pde_name}/simulation(refined).html',T_end,log_file,reference_data)
     
     if nrmse_refined < nrmse:
         # replace original html file
@@ -252,16 +252,35 @@ def refining(model:str,pde_name:str,IC_file_relative:str,simulation_file:str,T_e
     
     return nrmse_refined
 
+def process_data(pde_name:str, simulation_file:str,IC_file_relative:str):
+    folder_path = f"./data/{pde_name}/"
+    # find all hdf5 files in the directory
+    hdf5_files = [f for f in os.listdir(folder_path) if f.endswith('.hdf5')]
+    # 1D case
+    with h5py.File(file, 'r') as f:
+                
+        data = f['tensor'][:]  # The [:] loads the data into a NumPy array
+        tcoor = f['t-coordinate'][:]
+        xcoor = f['x-coordinate'][:]
+        
+    if pde_name in ["advection", "burgers"]:
+        data = np.loadtxt(f"./data/{pde_name}/IC.csv", delimiter=',')
+
+    
+    # save the data to simulation_file folder with name as IC_file_relative
+    save_path = os.path.join(os.path.dirname(simulation_file), IC_file_relative)
+    np.savetxt(save_path, data, delimiter=',')
+
 def main(model,pde_name,IC_file_relative,simulation_file,T_end,log_file,reference_data):
     debug_trails_left = 5
     refine_trails_left = 5
     parsing(model,pde_name)
     coding(model,pde_name)
-    nrmse = verifying(model,pde_name,IC_file_relative,simulation_file,T_end,log_file,reference_data)
+    nrmse = verifying(model,pde_name,input_paras,IC_file_relative,simulation_file,T_end,log_file,reference_data)
     while nrmse > 1 and debug_trails_left > 0:
         debugging(model,pde_name,IC_file_relative,log_file)
         debug_trails_left -= 1
-        nrmse = verifying(model,pde_name,IC_file_relative,simulation_file,T_end,log_file,reference_data)
+        nrmse = verifying(model,pde_name,input_paras,IC_file_relative,simulation_file,T_end,log_file,reference_data)
     
     if debug_trails_left == 0 and nrmse > 1:
         print(f"Debugging failed after 5 trails. Final nRMSE: {nrmse}")

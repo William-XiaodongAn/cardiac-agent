@@ -1,0 +1,14 @@
+{
+  "PDEs": "\\partial_t u(t, x) = -\\beta \\partial_x u(t,x)",
+  "number_of_state_variables": 1,
+  "texture_size": 1024,
+  "spatial_step": 0.0009765625,
+  "domain_size": 1.0,
+  "temporal_step": 0.001,
+  "time_horizon": 2.0,
+  "boundary_conditions": "Periodic",
+  "parameter_values": {
+    "beta": 0.1
+  },
+  "notes": "Use dt < 1.0e-3 for stability"
+}
