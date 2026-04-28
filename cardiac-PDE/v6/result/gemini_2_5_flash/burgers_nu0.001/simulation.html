@@ -83,56 +83,48 @@ layout (location = 0) out vec4 ocolor ;
 #define u       color.r
     const float nu = 0.001;
 // your codes here for helper function
-// Helper function to get the 'u' component (red channel) from the texture at a given coordinate.
-// It applies 'fract' to the coordinate, ensuring periodic boundary conditions.
-float getU_val(vec2 coord) {
-    return texture(inTexture, fract(coord)).r;
-}
+
+// your codes here for helper function
 
 // Main body of the shader
 void main() {
     vec2  size  = vec2(textureSize(inTexture, 0)) ;
 
-    // ii represents the texture coordinate step for one pixel in the x-direction.
-    vec2 ii = vec2(1.,0.)/size ;
-    // jj represents the texture coordinate step for one pixel in the y-direction.
-    // For this 1D PDE (Burgers' equation in x), jj is not directly used for spatial derivatives.
-    vec2 jj = vec2(0.,1.)/size ;
+    vec2 ii = vec2(1.0, 0.0) / size;
 
-    // read the color of the pixel at the current coordinate 'cc'.
-    // The #define u color.r means that 'u' will refer to the red channel of this 'color' variable.
+    // read the color of the pixel
     vec4 color = texture( inTexture , cc ) ;
+    float u_curr = u; // u_i^n
+
+    // use fract for periodic condition
+    vec2 prevX_coord = fract(cc - ii); // Coordinate for u_{i-1}
+    vec2 nextX_coord = fract(cc + ii); // Coordinate for u_{i+1}
+
+    // Read neighbor values
+    float u_prevX = texture(inTexture, prevX_coord).r; // u_{i-1}^n
+    float u_nextX = texture(inTexture, nextX_coord).r; // u_{i+1}^n
 
     // your codes here (do not define helper function)
-    // Get the current 'u' value at this pixel location.
-    float u_current = u; // Using the #define u color.r here.
 
-    // Get 'u' values from the left and right neighboring pixels using the helper function.
-    // The 'fract' function within getU_val handles periodic boundary conditions.
-    float u_left = getU_val(cc - ii); // u at j-1
-    float u_right = getU_val(cc + ii); // u at j+1
+    // Calculate Advection Term: - d/dx (u^2 / 2)
+    // F(u) = u^2 / 2
+    float F_prevX = u_prevX * u_prevX / 2.0;
+    float F_nextX = u_nextX * u_nextX / 2.0;
+    float dF_dx = (F_nextX - F_prevX) / (2.0 * dx);
+    float advection_term = -dF_dx;
 
-    // Calculate the advection term for Burgers' equation: -d/dx (u^2/2)
-    // We use a central difference scheme for the flux F(u) = u^2/2.
-    // Term: -(F(u_right) - F(u_left)) / (2 * dx)
-    float F_right = 0.5 * u_right * u_right;
-    float F_left = 0.5 * u_left * u_left;
-    float advection_term = -(F_right - F_left) / (2.0 * dx);
+    // Calculate Diffusion Term: (nu / pi) * d^2/dx^2 u
+    // d^2u/dx^2 = (u_{i+1} - 2u_i + u_{i-1}) / (dx^2)
+    float d2u_dx2 = (u_nextX - 2.0 * u_curr + u_prevX) / (dx * dx);
+    const float PI = 3.14159265359;
+    float diffusion_term = (nu / PI) * d2u_dx2;
 
-    // Calculate the diffusion term: nu * d^2/dx^2 (u)
-    // We use a central difference scheme for the second spatial derivative.
-    // Term: nu * (u_right - 2*u_current + u_left) / dx^2
-    float diffusion_term = nu * (u_right - 2.0 * u_current + u_left) / (dx * dx);
+    // Update u using Forward Euler
+    float u_new = u_curr + dt * (advection_term + diffusion_term);
 
-    // Update 'u' using the explicit Euler time integration scheme.
-    // u_new = u_current + dt * (advection_term + diffusion_term)
-    float u_new = u_current + dt * (advection_term + diffusion_term);
+    // your codes here (do not define helper function)
 
-    // Store the newly computed 'u_new' value into the red channel of the output color.
-    // The other channels (green, blue, alpha) are typically set to default values (0.0, 0.0, 1.0)
-    // as only the red channel is used for the 1D simulation state.
-    ocolor = vec4(u_new, 0.0, 0.0, 1.0);
-    return ;
+    ocolor = vec4(u_new, 0.0, 0.0, 1.0) ;
 }
 </script>
 
@@ -154,7 +146,7 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 9e-05 ,
+        dt : 0.0001 ,
         time : 0 ,
         dx : 0.0009765625,
         running : false ,

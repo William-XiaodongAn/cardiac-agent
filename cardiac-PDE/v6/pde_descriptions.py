@@ -87,7 +87,7 @@ The PDE system is a 1D advection model:
 
 \\begin{{equation}}
 \\begin{{cases}} 
-\\partial_t u(t, x) + \\partial_x (u(t,x)^2 / 2) = \\nu \\partial_{{xx}} u(t,x) \\\\
+\\partial_t u(t, x) + \\partial_x (u(t,x)^2) / 2 = \\nu / 3.1415926 *  \\partial_{{xx}} u(t,x) \\\\
 \\end{{cases}}
 \\end{{equation}}
 
@@ -106,7 +106,7 @@ Model Parameters are:
 
 - The domain is $x \\in [0,1]$ with $dx \\approx 9.765625 \\times 10^{{-4}}$
 
-- Time horizon is $T=1.0$ with $dt < 1.0 \\times 10^{{-4}}$
+- Time horizon is $T=2.0$ with $dt < 1.0 \\times 10^{{-4}}$
 
 - Use periodic boundary conditions.
 

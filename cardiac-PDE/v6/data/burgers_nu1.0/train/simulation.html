@@ -70,43 +70,39 @@ void main() {
 </script>
 
 <script id='march' type='shader'>#version 300 es
-precision highp float;
-precision highp int;
+precision highp float ;
+precision highp int ;
 
-uniform sampler2D inTexture;
-uniform float dt, dx, dy;
+uniform sampler2D   inTexture ;
+uniform float       dt, dx, dy;
 
-in vec2 cc, pixPos;
-layout (location = 0) out vec4 ocolor;
+in vec2 cc, pixPos ;
 
-#define u color.r
+layout (location = 0) out vec4 ocolor ;
+
+#define u       color.r
 const float nu = 1.0;
 
+// Main body of the shader
 void main() {
-    vec2 size = vec2(textureSize(inTexture, 0));
-    vec2 ii = vec2(1.0, 0.0) / size;
-    vec2 jj = vec2(0.0, 1.0) / size;
+    vec4 color = texture( inTexture , cc ) ;
+    vec2  size  = vec2(textureSize(inTexture, 0)) ;
+    vec2 ii = vec2(1.,0.)/size ;
+    vec2 jj = vec2(0.,1.)/size ;
 
-    vec4 color = texture(inTexture, cc);
+    vec4 left  = texture( inTexture , fract(cc - ii) );
+    vec4 right = texture( inTexture , fract(cc + ii) );
 
-    vec2 prev = fract(cc - ii);
-    vec2 next = fract(cc + ii);
+    float u_left  = left.r;
+    float u_right = right.r;
 
-    vec4 colPrev = texture(inTexture, prev);
-    vec4 colNext = texture(inTexture, next);
-    float u_prev = colPrev.r;
-    float u_curr = color.r;
-    float u_next = colNext.r;
+    float conv = -0.5 * (u_right*u_right - u_left*u_left) / (2.0 * dx);
+    float diff = nu / 3.14159265359 * (u_right - 2.0*u + u_left) / (dx * dx);
 
-    float f_prev = 0.5 * u_prev * u_prev;
-    float f_next = 0.5 * u_next * u_next;
-
-    float conv = (f_next - f_prev) / dx;
-    float diff = (u_next - 2.0 * u_curr + u_prev) / (dx * dx);
-
-    float u_new = u_curr + dt * (-conv + nu * diff);
+    float u_new = u + dt * (conv + diff);
 
     ocolor = vec4(u_new, 0.0, 0.0, 1.0);
+    return ;
 }
 </script>
 
@@ -128,7 +124,7 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 1e-07 ,
+        dt : 1e-06 ,
         time : 0 ,
         dx : 0.0009765625,
         running : false ,
@@ -237,7 +233,7 @@ env.saveCsvFile = function() {
 
 //IC
 const IC_url = 'IC_1.csv';
-const T_end = 1.0;
+const T_end = 2.0;
 //IC
 
 function loadCsv(url) {

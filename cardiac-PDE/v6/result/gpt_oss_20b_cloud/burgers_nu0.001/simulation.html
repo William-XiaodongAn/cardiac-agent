@@ -82,33 +82,30 @@ layout (location = 0) out vec4 ocolor ;
 
 #define u       color.r
 const float nu = 0.001;
+const float PI = 3.1415926;
+
+// helper function to fetch neighboring values with periodic boundaries
+float getU(in vec2 offset) {
+    return texture(inTexture, fract(cc + offset)).r;
+}
 
 void main() {
-    vec2  size  = vec2(textureSize(inTexture, 0)) ;
-    vec2 ii = vec2(1.0,0.0)/size ;
-    vec2 jj = vec2(0.0,1.0)/size ;
+    vec2  size  = vec2(textureSize(inTexture, 0));
+    vec2 ii = vec2(1.,0.)/size ;
+    vec2 jj = vec2(0.,1.)/size ;
 
-    // read the current value
-    vec4 color = texture( inTexture , cc ) ;
-    float u_cur = color.r ;
+    vec4 color = texture( inTexture , cc );
 
-    // periodic neighbours using fract
-    vec2 prevX = fract(cc - ii);
-    vec2 nextX = fract(cc + ii);
+    float u_cur  = getU(vec2(0.0));
+    float u_prev = getU(-ii);
+    float u_next = getU(+ii);
 
-    float u_prev = texture(inTexture, prevX).r ;
-    float u_next = texture(inTexture, nextX).r ;
+    float flux = (u_next*u_next - u_prev*u_prev) / (2.0*dx);
+    float lap  = (u_next - 2.0*u_cur + u_prev) / (dx*dx);
 
-    // convective derivative ∂_x(u^2/2)
-    float conv = (u_next*u_next - u_prev*u_prev) / (2.0*dx) ;
+    float u_new = u_cur + dt * ( -0.5*flux + (nu/PI)*lap );
 
-    // viscous term ν ∂_{xx} u
-    float visc = nu * (u_next - 2.0*u_cur + u_prev) / (dx*dx) ;
-
-    // update
-    float u_new = u_cur - dt * conv + dt * visc ;
-
-    ocolor = vec4(u_new, 0.0, 0.0, 1.0) ;
+    ocolor = vec4(u_new, color.g, color.b, color.a);
     return ;
 }
 </script>
@@ -131,7 +128,7 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 1e-05 ,
+        dt : 5e-05 ,
         time : 0 ,
         dx : 0.0009765625,
         running : false ,

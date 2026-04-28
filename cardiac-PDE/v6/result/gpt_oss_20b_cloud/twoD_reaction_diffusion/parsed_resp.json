@@ -1,16 +1,16 @@
 {
-  "PDEs": "\\partial_t u(t,x) = D_u \\partial_{xx} u(t,x) + D_u \\partial_{yy} u(t,x) + u(t,x) - u(t,x)^3 - k - v\\n\\partial_t v(t,x) = D_v \\partial_{xx} v(t,x) + D_v \\partial_{yy} v(t,x) + u(t,x) - v(t,x)",
+  "PDEs": "\\begin{cases}\\n\\partial_t u(t,x) = D_u \\partial_{xx} u(t,x) + D_u \\partial_{yy} u(t,x) + u(t,x) - u(t,x)^3 - k - v\\n\\partial_t v(t,x) = D_v \\partial_{xx} v(t,x) + D_v \\partial_{yy} v(t,x) + u(t,x) - v(t,x)\\n\\end{cases}",
   "number_of_state_variables": 2,
   "texture_size": 128,
   "spatial_step": 0.015625,
   "domain_size": 2.0,
-  "temporal_step": 1e-5,
+  "temporal_step": 1e-05,
   "time_horizon": 1.0,
-  "boundary_conditions": "Neumann (no-flux)",
+  "boundary_conditions": "No-Flux (Neumann)",
   "parameter_values": {
     "D_u": 0.001,
     "D_v": 0.005,
     "k": 0.005
   },
-  "notes": null
+  "notes": "The chosen spatial step (dx = 0.015625) and temporal step (dt = 1e-5) satisfy the CFL condition for the diffusion terms (dt \u2264 dx\u00b2/(4\u00b7max(D_u,D_v)) \u2248 0.012). The explicit time\u2011stepping is therefore stable. The relatively small dt also ensures adequate resolution of the nonlinear reaction dynamics."
 }

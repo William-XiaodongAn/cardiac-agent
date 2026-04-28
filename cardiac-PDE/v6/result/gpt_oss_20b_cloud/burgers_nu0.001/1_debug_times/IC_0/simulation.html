@@ -71,34 +71,35 @@ void main() {
 
 <script id='march' type='shader'>#version 300 es
 precision highp float;
+precision highp int;
 
 uniform sampler2D inTexture;
-uniform float dt, dx;
-in vec2 texCoord;
-layout (location = 0) out vec4 outColor;
+uniform float dt;
+uniform float dx;
+
+in vec2 cc;
+layout(location = 0) out vec4 fragColor;
+
+const float PI = 3.1415926535897932384626433832795;
 
 void main() {
-    ivec2 size = textureSize(inTexture, 0);
-    vec2 step = 1.0 / vec2(size);
+    vec2 texSize = vec2(textureSize(inTexture, 0));
+    vec2 step = 1.0 / texSize;
 
-    vec4 cur  = texture(inTexture, texCoord);
-    vec2 leftCoord  = vec2(mod(texCoord.x - step.x, 1.0), texCoord.y);
-    vec2 rightCoord = vec2(mod(texCoord.x + step.x, 1.0), texCoord.y);
+    vec2 prev = fract(cc - step);
+    vec2 next = fract(cc + step);
 
-    vec4 left  = texture(inTexture, leftCoord);
-    vec4 right = texture(inTexture, rightCoord);
+    float u     = texture(inTexture, cc).r;
+    float u_pre = texture(inTexture, prev).r;
+    float u_nxt = texture(inTexture, next).r;
 
-    float u    = cur.r;
-    float uL   = left.r;
-    float uR   = right.r;
+    float ux  = (u_nxt - u_pre) / (2.0 * dx);
+    float uxx = (u_nxt - 2.0 * u + u_pre) / (dx * dx);
 
-    float du_dx   = (uR - uL) / (2.0 * dx);
-    float d2u_dx2 = (uR - 2.0 * u + uL) / (dx * dx);
+    float du_dt = -u * ux + (1.0 / PI) * uxx;
+    float u_new = u + dt * du_dt;
 
-    float nu = 0.001;
-    float uNew = u - dt * (u * du_dx) + dt * nu * d2u_dx2;
-
-    outColor = vec4(uNew, cur.gba);
+    fragColor = vec4(u_new, 0.0, 0.0, 1.0);
 }
 </script>
 
@@ -120,7 +121,7 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 1e-05 ,
+        dt : 9.8e-05 ,
         time : 0 ,
         dx : 0.0009765625,
         running : false ,

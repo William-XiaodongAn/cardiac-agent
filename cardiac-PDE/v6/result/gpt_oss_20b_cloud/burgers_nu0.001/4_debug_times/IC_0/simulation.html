@@ -76,35 +76,37 @@ precision highp int;
 uniform sampler2D inTexture;
 uniform float dt;
 uniform float dx;
+uniform float nu;
+uniform float domainSize;
+in vec2 cc;
+layout(location = 0) out vec4 fragColor;
 
-in vec2 texCoord;
-layout (location = 0) out vec4 outColor;
+const float PI = 3.1415926535897932384626433832795;
 
-void main()
-{
-    vec2 sizeF = vec2(textureSize(inTexture, 0));
-    ivec2 idx = ivec2(floor(texCoord * sizeF));
-
-    int sizeX = int(sizeF.x);
-
-    ivec2 leftIdx  = idx; leftIdx.x  = (idx.x - 1 + sizeX) % sizeX;
-    ivec2 rightIdx = idx; rightIdx.x = (idx.x + 1) % sizeX;
-
-    vec4 cur   = texelFetch(inTexture, idx, 0);
-    float u    = cur.r;
-
-    float uL   = texelFetch(inTexture, leftIdx, 0).r;
-    float uR   = texelFetch(inTexture, rightIdx, 0).r;
-
-    float du_dx   = (uR - uL) / (2.0 * dx);
-    float d2u_dx2 = (uR - 2.0 * u + uL) / (dx * dx);
-
-    float nu    = 0.001;
-    float uNew   = u - dt * (u * du_dx) + dt * nu * d2u_dx2;
-
-    outColor = vec4(uNew, cur.gba);
+void main() {
+    // Physical size of texture
+    ivec2 texSize = textureSize(inTexture, 0);
+    // Compute nearest integer index along x
+    int idx = int(cc.x * float(texSize.x) + 0.5);
+    // Periodic index for previous and next cell
+    int idxPrev = (idx - 1 + texSize.x) % texSize.x;
+    int idxNext = (idx + 1) % texSize.x;
+    // Use y = 0 (assuming data stored in first row)
+    int y = 0;
+    // Sample current and neighboring values with no interpolation
+    float u = texelFetch(inTexture, ivec2(idx, y), 0).r;
+    float uPrev = texelFetch(inTexture, ivec2(idxPrev, y), 0).r;
+    float uNext = texelFetch(inTexture, ivec2(idxNext, y), 0).r;
+    // First derivative (central)
+    float ux = (uNext - uPrev) / (2.0 * dx);
+    // Second derivative (central)
+    float uxx = (uNext - 2.0 * u + uPrev) / (dx * dx);
+    // Time derivative from the PDE
+    float du_dt = -u * ux + (nu / PI) * uxx;
+    // Forward Euler step
+    float uNew = u + dt * du_dt;
+    fragColor = vec4(uNew, 0.0, 0.0, 1.0);
 }
-
 </script>
 
 <script>
@@ -125,7 +127,7 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 1e-05 ,
+        dt : 9.8e-05 ,
         time : 0 ,
         dx : 0.0009765625,
         running : false ,

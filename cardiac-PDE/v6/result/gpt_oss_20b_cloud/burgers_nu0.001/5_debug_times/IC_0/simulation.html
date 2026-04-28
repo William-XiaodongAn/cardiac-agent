@@ -76,37 +76,40 @@ precision highp int;
 uniform sampler2D inTexture;
 uniform float dt;
 uniform float dx;
+uniform float nu;
+uniform float domainSize; // unused in this shader
 
-in vec2 texCoord;
-layout(location = 0) out vec4 outColor;
+in vec2 cc; // texture coordinates in range [0,1]
+layout(location = 0) out vec4 fragColor;
 
-void main()
-{
-    ivec2 dims = textureSize(inTexture, 0);
-    int sizeX = dims.x;
+const float PI = 3.1415926535897932384626433832795;
 
-    int ix = int(clamp(texCoord.x * float(sizeX), 0.0, float(sizeX - 1)));
-    int iy = int(clamp(texCoord.y * float(dims.y), 0.0, float(dims.y - 1)));
+void main() {
+    ivec2 texSize = textureSize(inTexture, 0);
 
-    ivec2 idx = ivec2(ix, iy);
+    // Map normalized coordinate to texel index
+    int idx   = int(floor(cc.x * float(texSize.x)));
+    int idxPrev = (idx - 1 + texSize.x) % texSize.x;
+    int idxNext = (idx + 1) % texSize.x;
+    int y = 0;
 
-    int leftX  = (ix - 1 + sizeX) % sizeX;
-    int rightX = (ix + 1) % sizeX;
+    float u     = texelFetch(inTexture, ivec2(idx, y), 0).r;
+    float uPrev = texelFetch(inTexture, ivec2(idxPrev, y), 0).r;
+    float uNext = texelFetch(inTexture, ivec2(idxNext, y), 0).r;
 
-    ivec2 leftIdx  = ivec2(leftX,  iy);
-    ivec2 rightIdx = ivec2(rightX, iy);
+    // Conservative flux derivative ∂x(u²/2)
+    float FPrev = 0.5 * uPrev * uPrev;
+    float FNext = 0.5 * uNext * uNext;
+    float adv = -(FNext - FPrev) / (2.0 * dx);
 
-    float u    = texelFetch(inTexture, idx, 0).r;
-    float uL   = texelFetch(inTexture, leftIdx, 0).r;
-    float uR   = texelFetch(inTexture, rightIdx, 0).r;
+    // Diffusion term
+    float uxx = (uNext - 2.0 * u + uPrev) / (dx * dx);
+    float du_dt = adv + (nu / PI) * uxx;
 
-    float du_dx   = (uR - uL) / (2.0 * dx);
-    float d2u_dx2 = (uR - 2.0 * u + uL) / (dx * dx);
+    // Forward Euler update
+    float uNew = u + dt * du_dt;
 
-    float nu   = 0.001;
-    float uNew = u - dt * (u * du_dx) + dt * nu * d2u_dx2;
-
-    outColor = vec4(uNew, texelFetch(inTexture, idx, 0).gba);
+    fragColor = vec4(uNew, 0.0, 0.0, 1.0);
 }
 </script>
 
@@ -128,7 +131,7 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 1e-05 ,
+        dt : 9.8e-05 ,
         time : 0 ,
         dx : 0.0009765625,
         running : false ,

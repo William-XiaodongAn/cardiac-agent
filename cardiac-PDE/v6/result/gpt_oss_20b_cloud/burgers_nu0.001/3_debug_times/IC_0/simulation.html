@@ -71,37 +71,28 @@ void main() {
 
 <script id='march' type='shader'>#version 300 es
 precision highp float;
-
 uniform sampler2D inTexture;
 uniform float dt;
 uniform float dx;
-
-in vec2 texCoord;
-layout (location = 0) out vec4 outColor;
-
-void main()
-{
-    ivec2 size = textureSize(inTexture, 0);
-    ivec2 idx = ivec2(clamp(floor(texCoord * vec2(size)), vec2(0.0), vec2(float(size)-1.0)));
-
-    // wrap around indices for periodic boundary
-    ivec2 leftIdx  = idx; leftIdx.x = (leftIdx.x - 1 + size.x) % size.x;
-    ivec2 rightIdx = idx; rightIdx.x = (rightIdx.x + 1) % size.x;
-
-    vec4 cur = texelFetch(inTexture, idx, 0);
-    float u   = cur.r;
-
-    float uL  = texelFetch(inTexture, leftIdx, 0).r;
-    float uR  = texelFetch(inTexture, rightIdx, 0).r;
-
-    float du_dx   = (uR - uL) / (2.0 * dx);
-    float d2u_dx2 = (uR - 2.0 * u + uL) / (dx * dx);
-
-    float nu = 0.001;
-    float uNew = u - dt * (u * du_dx) + dt * nu * d2u_dx2;
-
-    outColor = vec4(uNew, cur.gba);
+uniform float domainSize;
+in vec2 cc;
+layout(location = 0) out vec4 fragColor;
+const float PI = 3.1415926535897932384626433832795;
+void main(){
+    vec2 texSize = vec2(textureSize(inTexture, 0));
+    vec2 step = 1.0 / texSize;
+    vec2 prev = mod(cc - step, 1.0);
+    vec2 next = mod(cc + step, 1.0);
+    float u = texture(inTexture, cc).r;
+    float u_pre = texture(inTexture, prev).r;
+    float u_nxt = texture(inTexture, next).r;
+    float ux = (u_nxt - u_pre) / (2.0 * dx);
+    float uxx = (u_nxt - 2.0 * u + u_pre) / (dx * dx);
+    float du_dt = -u * ux + (1.0 / PI) * uxx;
+    float u_new = u + dt * du_dt;
+    fragColor = vec4(u_new, 0.0, 0.0, 1.0);
 }
+
 </script>
 
 <script>
@@ -122,7 +113,7 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 1e-05 ,
+        dt : 9.8e-05 ,
         time : 0 ,
         dx : 0.0009765625,
         running : false ,

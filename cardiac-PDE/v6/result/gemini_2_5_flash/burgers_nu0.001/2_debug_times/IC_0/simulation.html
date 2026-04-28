@@ -70,91 +70,82 @@ void main() {
 </script>
 
 <script id='march' type='shader'>#version 300 es
-
-#version 300 es
 precision highp float ;
 precision highp int ;
 
 uniform sampler2D   inTexture ;
-uniform float       dt, dx, dy; // dt: time step, dx: spatial step (grid spacing), dy: unused for 1D
+uniform float       dt, dx, dy;
 
-in vec2 cc, pixPos ; // cc: current texture coordinate, pixPos: pixel position (unused)
+in vec2 cc, pixPos ;
 
-layout (location = 0) out vec4 ocolor ; // Output color for the current pixel
+layout (location = 0) out vec4 ocolor ;
 
-#define u       color.r // Macro to easily refer to the 'u' component (red channel)
+#define u       color.r
+    const float nu = 0.001;
+// No helper functions are needed as GLSL provides built-in abs() and max().
 
-    const float nu = 0.001; // Viscosity parameter for the diffusion term
-
-// Helper function to get the 'u' component (red channel) from the texture at a given coordinate.
-// It applies 'fract' to the coordinate, ensuring periodic boundary conditions by wrapping around.
-float getU_val(vec2 coord) {
-    return texture(inTexture, fract(coord)).r;
-}
-
-// Main body of the shader, executed for each pixel (grid point)
+// Main body of the shader
 void main() {
-    // Get the size of the input texture at mipmap level 0.
     vec2  size  = vec2(textureSize(inTexture, 0)) ;
 
-    // ii represents the texture coordinate step for one pixel in the x-direction.
-    // This is equivalent to 1/N_x, where N_x is the number of pixels in x-direction.
+    // ii represents the texture coordinate step corresponding to dx in the x-direction.
     vec2 ii = vec2(1.,0.)/size ;
-    // jj represents the texture coordinate step for one pixel in the y-direction.
-    // For this 1D PDE (Burgers' equation in x), jj is not directly used for spatial derivatives.
-    vec2 jj = vec2(0.,1.)/size ;
+    // jj represents the texture coordinate step corresponding to dy in the y-direction.
+    // For a 1D PDE along x, dy and jj are typically not used.
+    // vec2 jj = vec2(0.,1.)/size ; // Not used for 1D PDE along x
 
-    // Read the color (and thus 'u' value) of the pixel at the current coordinate 'cc' from the input texture.
+    // read the color of the pixel at the current texture coordinate (x_i, y_j)
     vec4 color = texture( inTexture , cc ) ;
 
-    // Get the current 'u' value at this pixel location (u_j^n).
-    float u_current = u;
+    // Apply periodic boundary conditions for fetching neighbor values.
+    // The fract function ensures coordinates wrap around from 0 to 1.
+    vec2 prevX_coord = fract(cc - ii); // Coordinate for u(x_i - dx)
+    vec2 nextX_coord = fract(cc + ii); // Coordinate for u(x_i + dx)
 
-    // --- BUG FIX: Handle dt = 0.0 explicitly ---
-    // If the time step 'dt' is zero, the simulation should not advance.
-    // In this case, the output 'u_new' should simply be the current 'u_current'.
-    // The original Lax-Friedrichs term, when dt=0, would incorrectly average neighbors
-    // instead of returning u_current, leading to a logical bug when pausing or initializing with dt=0.
-    if (dt == 0.0) {
-        ocolor = vec4(u_current, 0.0, 0.0, 1.0);
-        return;
-    }
+    // Read the 'u' values (red channel) from the current and neighboring pixels.
+    float u_c = u; // u at current pixel (x_i)
+    float u_prevX = texture(inTexture, prevX_coord).r; // u at x_{i-1}
+    float u_nextX = texture(inTexture, nextX_coord).r; // u at x_{i+1}
 
-    // Get 'u' values from the left and right neighboring pixels using the helper function.
-    // 'fract' handles periodic boundary conditions for coordinates that go below 0 or above 1.
-    float u_left = getU_val(cc - ii);  // u at j-1 (u_{j-1}^n)
-    float u_right = getU_val(cc + ii); // u at j+1 (u_{j+1}^n)
+    // Flux function F(u) = u^2/2 for Burgers' equation.
+    float F_c = 0.5 * u_c * u_c;
+    float F_prevX = 0.5 * u_prevX * u_prevX;
+    float F_nextX = 0.5 * u_nextX * u_nextX;
 
-    // Calculate the fluxes F(u) = u^2/2 for Burgers' equation.
-    float F_left_val = 0.5 * u_left * u_left;   // F(u_{j-1}^n)
-    float F_right_val = 0.5 * u_right * u_right; // F(u_{j+1}^n)
+    // --- Advection Term: - d/dx (u^2/2) using Rusanov (Local Lax-Friedrichs) Flux ---
+    // The Rusanov scheme is a first-order, robust, and less diffusive alternative to the global Lax-Friedrichs scheme.
+    // It's preferred for non-linear conservation laws like Burgers' equation to improve numerical accuracy (lower RMSE).
 
-    // --- Advection Term (using Lax-Friedrichs scheme for stability) ---
-    // The Lax-Friedrichs scheme for du/dt + d/dx(F(u)) = 0 is a robust explicit scheme:
-    // u_j^(n+1) = 0.5 * (u_{j-1}^n + u_{j+1}^n) - (dt / (2*dx)) * (F(u_{j+1}^n) - F(u_{j-1}^n))
-    // This formulation directly calculates the new 'u' value after the advection step.
-    float advection_contribution = 0.5 * (u_left + u_right) - (dt / (2.0 * dx)) * (F_right_val - F_left_val);
+    // Calculate the maximum characteristic speed alpha for the right and left cell interfaces.
+    // For Burgers' equation, F'(u) = u, so alpha is max(|u|) across the interface.
+    float alpha_right = max(abs(u_c), abs(u_nextX)); // alpha at x_i+1/2
+    float alpha_left = max(abs(u_prevX), abs(u_c));   // alpha at x_i-1/2
 
-    // --- Diffusion Term (using standard central difference for the second spatial derivative) ---
-    // This term approximates the second derivative (d^2u/dx^2) at u_j^n:
-    // d^2u/dx^2 approx (u_right - 2*u_current + u_left) / dx^2
-    // This is the rate of change due to diffusion (du/dt)_diffusion.
-    float diffusion_rate = nu * (u_right - 2.0 * u_current + u_left) / (dx * dx);
+    // Calculate the Rusanov numerical fluxes at the cell interfaces.
+    // F_hat_{i+1/2} = 0.5 * (F_i + F_{i+1}) - 0.5 * alpha_{i+1/2} * (u_{i+1} - u_i)
+    float F_hat_right = 0.5 * (F_c + F_nextX) - 0.5 * alpha_right * (u_nextX - u_c); // Numerical flux at x_i+1/2
+    float F_hat_left = 0.5 * (F_prevX + F_c) - 0.5 * alpha_left * (u_c - u_prevX);   // Numerical flux at x_i-1/2
 
-    // --- Combined Update ---
-    // The total update for u_new is obtained by combining the advection result
-    // with the time-scaled contribution from the diffusion term.
-    // This is a common way to combine these explicit schemes (additive splitting).
-    // u_new = (u from advection step) + (dt * diffusion rate)
-    float u_new = advection_contribution + dt * diffusion_rate;
+    // Calculate the spatial derivative of the numerical flux.
+    // This approximates -d/dx F(u).
+    float advection_term = -(F_hat_right - F_hat_left) / dx;
 
-    // Store the newly computed 'u_new' value into the red channel of the output color.
-    // The other channels (green, blue, alpha) are typically set to default values (0.0, 0.0, 1.0)
-    // as only the red channel represents the 'u' state in this 1D simulation.
-    ocolor = vec4(u_new, 0.0, 0.0, 1.0);
+    // --- Diffusion Term: nu * d^2u/dx^2 ---
+    // We approximate the second spatial derivative of u using central difference: (u_{i+1} - 2*u_i + u_{i-1}) / dx^2.
+    // This part remains the same as it's a standard second-order central difference.
+    float d2u_dx2 = (u_nextX - 2.0 * u_c + u_prevX) / (dx * dx);
+    float diffusion_term = nu * d2u_dx2;
+
+    // --- Time Integration: Explicit Euler Forward scheme ---
+    // u^{n+1}_i = u^n_i + dt * (Advection_term + Diffusion_term)
+    // The explicit Euler method is applied to the sum of the advection and diffusion terms.
+    float new_u = u_c + dt * (advection_term + diffusion_term);
+
+    // Store the new 'u' value in the red channel of the output color.
+    // The other color channels (green, blue, alpha) are preserved from the original pixel.
+    ocolor = vec4(new_u, color.g, color.b, color.a);
     return ;
 }
-
 </script>
 
 <script>
