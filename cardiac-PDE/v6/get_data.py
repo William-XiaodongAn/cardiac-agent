@@ -27,7 +27,7 @@ paras['1D_Burgers_Sols_Nu1.0.hdf5'] = {'nu': 1.0}
 
 links['2D_diff-react_NA_NA.h5'] = 'https://darus.uni-stuttgart.de/api/access/datafile/133017'
 pde_names['2D_diff-react_NA_NA.h5'] = 'twoD_reaction_diffusion'
-paras['2D_diff-react_NA_NA.h5'] = {} 
+paras['2D_diff-react_NA_NA.h5'] = {    "D_u": 0.001,    "D_v": 0.005,    "k": 0.005} 
 
 links['fk.h5'] = ''
 pde_names['fk.h5'] = 'fenton_karma'
@@ -39,20 +39,21 @@ def transform_1D_to_2D(data_1D, xcoor):
     r_channel = np.tile(data_1D_to, (len(xcoor), 1))
     g_channel = np.zeros_like(r_channel)
     b_channel = np.zeros_like(r_channel)
-    a_channel = np.full_like(r_channel, 255)
+    a_channel = np.zeros_like(r_channel)
 
     rgba_flat = np.dstack([r_channel, g_channel, b_channel, a_channel]).ravel()
     
     r_channel = np.tile(data_1D_tend, (len(xcoor), 1))
     g_channel = np.zeros_like(r_channel)
     b_channel = np.zeros_like(r_channel)
-    a_channel = np.full_like(r_channel, 255)
+    a_channel = np.zeros_like(r_channel)
 
     rgba_flat_tend = np.dstack([r_channel, g_channel, b_channel, a_channel]).ravel()
     return rgba_flat.reshape(1, -1),rgba_flat_tend.reshape(1, -1)
 
 def main():
     for filename in links.keys():
+        
         url = links[filename]
         pde_name = pde_names[filename]
         para = paras[filename]
@@ -62,13 +63,14 @@ def main():
         os.makedirs(f"./data/{pde_name}/train", exist_ok=True)
         os.makedirs(f"./data/{pde_name}/test", exist_ok=True)
         print(f"Downloading {filename}...")
+        hdf5_file_name = pde_name + '.hdf5'
         try:
             # Send request
             response = requests.get(url, stream=True)
             response.raise_for_status()
             
             # Save the HDF5 file
-            hdf5_file_name = pde_name + '.hdf5'
+
             file_save_path = os.path.join(path, hdf5_file_name)
             with open(file_save_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
@@ -112,12 +114,11 @@ def main():
                     f.write(f"{random_samples.shape[2]},{random_samples.shape[2]},")
                     
                     # Save the flattened array as a single row
-                    # Using reshape(1, -1) forces savetxt to treat it as one line
-                    np.savetxt(f, sample_2D, delimiter=",", fmt="%.18e")
+                    np.savetxt(f, sample_2D, delimiter=",", fmt="%.10e")
                 
                 with open(IC_file.replace('IC', 'solution'), 'w') as f:
                     f.write(f"{random_samples.shape[2]},{random_samples.shape[2]},")
-                    np.savetxt(f, sample_2D_tend, delimiter=",", fmt="%.18e")
+                    np.savetxt(f, sample_2D_tend, delimiter=",", fmt="%.10e")
                     
         elif filename == '2D_diff-react_NA_NA.h5':
             hdf5_file_path = f"./data/{pde_name}/{hdf5_file_name}"
@@ -144,7 +145,7 @@ def main():
                     rgba[..., 1] = sample_2D[..., 1] # Set G
                     flat_rgba = rgba.flatten()
 
-                    np.savetxt(f, flat_rgba.reshape(1, -1), delimiter=",", fmt="%.18e")
+                    np.savetxt(f, flat_rgba.reshape(1, -1), delimiter=",", fmt="%.10e")
                 
                 with open(IC_file.replace('IC', 'solution'), 'w') as f:
                     f.write(f"{sample_2D_tend.shape[0]},{sample_2D_tend.shape[1]},")
@@ -153,7 +154,7 @@ def main():
                     rgba[..., 1] = sample_2D_tend[..., 1] # Set G
                     flat_rgba = rgba.flatten()
 
-                    np.savetxt(f, flat_rgba.reshape(1, -1), delimiter=",", fmt="%.18e")
+                    np.savetxt(f, flat_rgba.reshape(1, -1), delimiter=",", fmt="%.10e")
                     
 if __name__ == "__main__":
     main()

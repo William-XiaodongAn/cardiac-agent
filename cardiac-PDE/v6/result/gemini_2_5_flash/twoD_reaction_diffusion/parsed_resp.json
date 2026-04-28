@@ -1,0 +1,18 @@
+
+{
+  "PDEs": "\\partial_t u(t,x) = D_u \\partial_{xx} u(t,x) + D_u \\partial_{yy} u(t,x) + u(t,x) - u(t,x)^3 - k - v 
+\\partial_t v(t,x) = D_v \\partial_{xx} v(t,x) + D_v \\partial_{yy} v(t,x) + u(t,x) - v(t,x)",
+  "number_of_state_variables": 2,
+  "texture_size": 128,
+  "spatial_step": 0.015625,
+  "domain_size": 2.0,
+  "temporal_step": 0.00005,
+  "time_horizon": 1.0,
+  "boundary_conditions": "No-Flux (Neumann)",
+  "parameter_values": {
+    "D_u": 0.001,
+    "D_v": 0.005,
+    "k": 0.005
+  },
+  "notes": null
+}

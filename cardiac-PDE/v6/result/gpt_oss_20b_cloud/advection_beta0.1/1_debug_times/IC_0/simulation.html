@@ -76,31 +76,28 @@ precision highp int;
 uniform sampler2D inTexture;
 uniform float dt, dx, dy;
 
-in vec2 cc;
+in vec2 cc, pixPos; // From vertex shader
 
 layout(location = 0) out vec4 ocolor;
 
 const float beta = 0.1;
 
-vec4 samplePeriodic(sampler2D tex, vec2 coord, vec2 delta) {
-    return texture(tex, fract(coord - delta));
-}
-
 void main() {
     vec2 texSize = vec2(textureSize(inTexture, 0));
-    vec2 invSize = 1.0 / texSize;
-    vec2 ii = vec2(1.0, 0.0) * invSize;
+    vec2 ii = vec2(1.0, 0.0) / texSize;   // step in x
 
-    vec4 color = texture(inTexture, cc);
-    float u_cur = color.r;
+    vec4 texColor = texture(inTexture, cc);
 
-    float u_prev = samplePeriodic(inTexture, cc, ii).r;
+    // periodic boundary condiciones: upwind difference along x
+    vec2 prevX = fract(cc - ii);
+    vec4 prevColor = texture(inTexture, prevX);
 
-    float dudx = (u_cur - u_prev) / dx;
-    float u_new = u_cur + dt * (-beta * dudx);
+    float du_dx = (texColor.r - prevColor.r) / dx;
+    float u_new  = texColor.r - dt * beta * du_dx;
 
-    ocolor = vec4(u_new, 0.0, 0.0, 1.0);
+    ocolor = vec4(u_new, texColor.g, texColor.b, texColor.a);
 }
+
 </script>
 
 <script>
@@ -125,8 +122,8 @@ var env = {
         time : 0 ,
         dx : 0.0009765625,
         running : false ,
-		width : None,
-		height : None,
+		width : 1024,
+		height : 1024,
 		clickRadius : 0.06 ,
 		clickPosition  : [0.,0.] ,
 		skip : 40,
@@ -205,43 +202,27 @@ function march(){
 
 env.csvFileName = 'result.csv' ;
 env.saveCsvFile = function() {
-    var rows = [env.width + ',' + env.height]; // Start with header
-    var width = env.width;
-    var height = env.height;
-    
-    // Use an array to collect data (faster than string concatenation)
-    for (var i = 0; i < (width * height); i++) {
-        var indx = i * 4;
-        var row = [];
-        for (let j = 0; j < texture_num; j++) {
-            let name = "fcolor" + j;
-            let vals = env[name].value;
-            row.push(
-                vals[indx].toExponential(),
-                vals[indx + 1].toExponential(),
-                vals[indx + 2].toExponential(),
-                vals[indx + 3].toExponential()
-            );
-        }
-        rows.push(row.join(','));
-    }
+    data = env.fcolor0.value.toString() ;
 
-    // Create a Blob from the array of strings
-    var blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    var url = URL.createObjectURL(blob); // Create a temporary local URL
-    
-    var link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', env.csvFileName);
-    link.style.visibility = 'hidden';
-    
+    // 3. CRITICAL: Pass the array directly to the Blob. 
+    // This avoids creating one giant mega-string in memory.
+    const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    const name_download = 'result.csv';
+
+    link.href = url;
+    link.download = name_download;
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    // Clean up the URL to free memory
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+    URL.revokeObjectURL(url); // Cleanup
 };
+
 
 
 //IC

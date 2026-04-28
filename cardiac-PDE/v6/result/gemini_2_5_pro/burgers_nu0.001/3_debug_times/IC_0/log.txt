@@ -1,0 +1,391 @@
+[INFO] 1777316230487 - https://abubujs.org/libs/Abubu.latest.js 14591:8 "***********************************"
+[INFO] 1777316230487 - https://abubujs.org/libs/Abubu.latest.js 14592:8 "Abubu " "v6.9.04"
+[INFO] 1777316230487 - https://abubujs.org/libs/Abubu.latest.js 14593:8 "Updated on" "Wed 20 Sep 2023 15:53:43 (EDT)"
+[INFO] 1777316230487 - https://abubujs.org/libs/Abubu.latest.js 14594:8 "Developed by Abouzar Kaboudian!"
+[INFO] 1777316230487 - https://abubujs.org/libs/Abubu.latest.js 14595:8 "For support email: abouzar.kaboudian@physics.gatech.edu"
+[INFO] 1777316230487 - https://abubujs.org/libs/Abubu.latest.js 14596:8 "***********************************"
+[INFO] 1777316230511 - https://abubujs.org/libs/Abubu.latest.js 14632:12 "WebGL 2.0 context successfully initialized!"
+[INFO] 1777316230511 - https://abubujs.org/libs/Abubu.latest.js 27308:12 "Loaded the library without using require.js..."
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "1\t" "#version 300 es"
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "2\t" ""
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "3\t" "#version 300 es"
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "4\t" ""
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "5\t" "precision highp float ;"
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "6\t" "precision highp int ;"
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "7\t" ""
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "8\t" "uniform sampler2D   inTexture ;"
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "9\t" "uniform float       dt, dx, dy;"
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "10\t" ""
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "11\t" "in vec2 cc, pixPos ;"
+[INFO] 1777316230652 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "12\t" ""
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "13\t" "layout (location = 0) out vec4 ocolor ;"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "14\t" ""
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "15\t" "#define u       color.r"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "16\t" "    const float nu = 0.001;"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "17\t" "// your codes here for helper function"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "18\t" "// Helper function to compute the convection term d/dx(u^2/2) using a first-order upwind scheme."
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "19\t" "// This scheme is more stable than the central difference for hyperbolic problems, especially with shocks,"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "20\t" "// as it introduces numerical diffusion that damps oscillations, addressing the source of the inaccuracy."
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "21\t" "float convection(vec2 texel_step, float u_curr) {"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "22\t" "    // Read the value of u at the right neighbor (x+dx)."
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "23\t" "    float u_next = texture(inTexture, fract(cc + texel_step)).r;"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "24\t" "    // Read the value of u at the left neighbor (x-dx)."
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "25\t" "    float u_prev = texture(inTexture, fract(cc - texel_step)).r;"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "26\t" ""
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "27\t" "    // Calculate the flux F = u^2 / 2 at the neighboring and current points."
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "28\t" "    float f_next = 0.5 * u_next * u_next;"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "29\t" "    float f_curr = 0.5 * u_curr * u_curr;"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "30\t" "    float f_prev = 0.5 * u_prev * u_prev;"
+[INFO] 1777316230653 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "31\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "32\t" "    // The upwind scheme approximates the derivative based on the direction of the \"flow\","
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "33\t" "    // which is determined by the sign of the local velocity u_curr."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "34\t" "    // If u_curr > 0, information propagates from left to right, so we use a backward difference."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "35\t" "    // This means the flux gradient is based on the current and previous cells."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "36\t" "    if (u_curr > 0.0) {"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "37\t" "        return (f_curr - f_prev) / dx;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "38\t" "    }"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "39\t" "    // If u_curr \u003C= 0, information propagates from right to left, so we use a forward difference."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "40\t" "    // This means the flux gradient is based on the next and current cells."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "41\t" "    else {"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "42\t" "        return (f_next - f_curr) / dx;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "43\t" "    }"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "44\t" "}"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "45\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "46\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "47\t" "// your codes here for helper function"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "48\t" "// Helper function to compute the diffusion term nu * d^2u/dx^2 using a central difference scheme."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "49\t" "// This term models the dissipation or viscous effects."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "50\t" "float diffusion(vec2 texel_step, float u_curr) {"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "51\t" "    // We approximate the second derivative d^2u/dx^2 using the standard formula:"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "52\t" "    // (u(x+dx) - 2*u(x) + u(x-dx)) / dx^2."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "53\t" "    "
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "54\t" "    // Read the value of u at the right neighbor (x+dx)."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "55\t" "    float u_next = texture(inTexture, fract(cc + texel_step)).r;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "56\t" "    // Read the value of u at the left neighbor (x-dx)."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "57\t" "    float u_prev = texture(inTexture, fract(cc - texel_step)).r;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "58\t" "    "
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "59\t" "    // Calculate the second derivative approximation."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "60\t" "    float d2u_dx2 = (u_next - 2.0 * u_curr + u_prev) / (dx * dx);"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "61\t" "    "
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "62\t" "    // Return the diffusion term, scaled by the viscosity coefficient nu."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "63\t" "    return nu * d2u_dx2;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "64\t" "}"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "65\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "66\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "67\t" "// Main body of the shader"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "68\t" "void main() {"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "69\t" "    vec2  size  = vec2(textureSize(inTexture, 0)) ;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "70\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "71\t" "    // Calculate the texture coordinate offset for one pixel step in the x-direction."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "72\t" "    // The simulation is 1D, so we only need steps along the x-axis."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "73\t" "    vec2 ii = vec2(1.,0.)/size ;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "74\t" "    vec2 jj = vec2(0.,1.)/size ;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "75\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "76\t" "    // read the color of the pixel, which contains the current value of u in its red channel."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "77\t" "    vec4 color = texture( inTexture , cc ) ;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "78\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "79\t" "    // use fract for periodic condition"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "80\t" "    // for example: vec2 prevX = fract(cc - ii);"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "81\t" "    // your codes here (do not define helper function)"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "82\t" "    // The PDE is du/dt = -convection + diffusion."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "83\t" "    // We compute each term using the helper functions. The convection term requires the current u"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "84\t" "    // to determine the upwind direction."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "85\t" "    float conv_term = convection(ii, u);"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "86\t" "    float diff_term = diffusion(ii, u); // u is a macro for color.r"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "87\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "88\t" "    // your codes here (do not define helper function)"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "89\t" "    // Combine the terms to get the total rate of change of u."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "90\t" "    float du_dt = -conv_term + diff_term;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "91\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "92\t" "    // Update u using the Forward Euler method for time integration: u(t+dt) = u(t) + dt * du/dt."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "93\t" "    float u_new = u + dt * du_dt;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "94\t" "    color.r = u_new;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "95\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "96\t" "    // Output the new state. The updated value is stored in the red channel."
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "97\t" "    ocolor = color ;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "98\t" "    return ;"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "99\t" "}"
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "100\t" ""
+[INFO] 1777316230654 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "101\t" ""
+[INFO] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 14723:16 "ERROR: 0:3: 'version' : #version directive must occur before anything else, except for comments and white space\n\u0000"
+[INFO] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 14734:20 "Shader failed to compile! Trying last available compilable source!"
+[SEVERE] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 14739:24 "No successful compilation is available"
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 14793 WebGL: INVALID_VALUE: attachShader: attempt to use a deleted object
+[INFO] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 14803:12 "The program must contain objects to form both a vertex and fragment shader.\n\u0000"
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17165 WebGL: INVALID_OPERATION: getAttribLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17178 WebGL: INVALID_VALUE: vertexAttribPointer: index out of range
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17187 WebGL: INVALID_VALUE: enableVertexAttribArray: index out of range
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[INFO] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "1\t" "#version 300 es"
+[INFO] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "2\t" ""
+[INFO] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "3\t" "#version 300 es"
+[INFO] 1777316230655 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "4\t" ""
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "5\t" "precision highp float ;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "6\t" "precision highp int ;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "7\t" ""
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "8\t" "uniform sampler2D   inTexture ;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "9\t" "uniform float       dt, dx, dy;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "10\t" ""
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "11\t" "in vec2 cc, pixPos ;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "12\t" ""
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "13\t" "layout (location = 0) out vec4 ocolor ;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "14\t" ""
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "15\t" "#define u       color.r"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "16\t" "    const float nu = 0.001;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "17\t" "// your codes here for helper function"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "18\t" "// Helper function to compute the convection term d/dx(u^2/2) using a first-order upwind scheme."
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "19\t" "// This scheme is more stable than the central difference for hyperbolic problems, especially with shocks,"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "20\t" "// as it introduces numerical diffusion that damps oscillations, addressing the source of the inaccuracy."
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "21\t" "float convection(vec2 texel_step, float u_curr) {"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "22\t" "    // Read the value of u at the right neighbor (x+dx)."
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "23\t" "    float u_next = texture(inTexture, fract(cc + texel_step)).r;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "24\t" "    // Read the value of u at the left neighbor (x-dx)."
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "25\t" "    float u_prev = texture(inTexture, fract(cc - texel_step)).r;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "26\t" ""
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "27\t" "    // Calculate the flux F = u^2 / 2 at the neighboring and current points."
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "28\t" "    float f_next = 0.5 * u_next * u_next;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "29\t" "    float f_curr = 0.5 * u_curr * u_curr;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "30\t" "    float f_prev = 0.5 * u_prev * u_prev;"
+[INFO] 1777316230656 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "31\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "32\t" "    // The upwind scheme approximates the derivative based on the direction of the \"flow\","
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "33\t" "    // which is determined by the sign of the local velocity u_curr."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "34\t" "    // If u_curr > 0, information propagates from left to right, so we use a backward difference."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "35\t" "    // This means the flux gradient is based on the current and previous cells."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "36\t" "    if (u_curr > 0.0) {"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "37\t" "        return (f_curr - f_prev) / dx;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "38\t" "    }"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "39\t" "    // If u_curr \u003C= 0, information propagates from right to left, so we use a forward difference."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "40\t" "    // This means the flux gradient is based on the next and current cells."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "41\t" "    else {"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "42\t" "        return (f_next - f_curr) / dx;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "43\t" "    }"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "44\t" "}"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "45\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "46\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "47\t" "// your codes here for helper function"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "48\t" "// Helper function to compute the diffusion term nu * d^2u/dx^2 using a central difference scheme."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "49\t" "// This term models the dissipation or viscous effects."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "50\t" "float diffusion(vec2 texel_step, float u_curr) {"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "51\t" "    // We approximate the second derivative d^2u/dx^2 using the standard formula:"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "52\t" "    // (u(x+dx) - 2*u(x) + u(x-dx)) / dx^2."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "53\t" "    "
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "54\t" "    // Read the value of u at the right neighbor (x+dx)."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "55\t" "    float u_next = texture(inTexture, fract(cc + texel_step)).r;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "56\t" "    // Read the value of u at the left neighbor (x-dx)."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "57\t" "    float u_prev = texture(inTexture, fract(cc - texel_step)).r;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "58\t" "    "
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "59\t" "    // Calculate the second derivative approximation."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "60\t" "    float d2u_dx2 = (u_next - 2.0 * u_curr + u_prev) / (dx * dx);"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "61\t" "    "
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "62\t" "    // Return the diffusion term, scaled by the viscosity coefficient nu."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "63\t" "    return nu * d2u_dx2;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "64\t" "}"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "65\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "66\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "67\t" "// Main body of the shader"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "68\t" "void main() {"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "69\t" "    vec2  size  = vec2(textureSize(inTexture, 0)) ;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "70\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "71\t" "    // Calculate the texture coordinate offset for one pixel step in the x-direction."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "72\t" "    // The simulation is 1D, so we only need steps along the x-axis."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "73\t" "    vec2 ii = vec2(1.,0.)/size ;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "74\t" "    vec2 jj = vec2(0.,1.)/size ;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "75\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "76\t" "    // read the color of the pixel, which contains the current value of u in its red channel."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "77\t" "    vec4 color = texture( inTexture , cc ) ;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "78\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "79\t" "    // use fract for periodic condition"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "80\t" "    // for example: vec2 prevX = fract(cc - ii);"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "81\t" "    // your codes here (do not define helper function)"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "82\t" "    // The PDE is du/dt = -convection + diffusion."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "83\t" "    // We compute each term using the helper functions. The convection term requires the current u"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "84\t" "    // to determine the upwind direction."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "85\t" "    float conv_term = convection(ii, u);"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "86\t" "    float diff_term = diffusion(ii, u); // u is a macro for color.r"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "87\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "88\t" "    // your codes here (do not define helper function)"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "89\t" "    // Combine the terms to get the total rate of change of u."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "90\t" "    float du_dt = -conv_term + diff_term;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "91\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "92\t" "    // Update u using the Forward Euler method for time integration: u(t+dt) = u(t) + dt * du/dt."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "93\t" "    float u_new = u + dt * du_dt;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "94\t" "    color.r = u_new;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "95\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "96\t" "    // Output the new state. The updated value is stored in the red channel."
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "97\t" "    ocolor = color ;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "98\t" "    return ;"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "99\t" "}"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "100\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "101\t" ""
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14723:16 "ERROR: 0:3: 'version' : #version directive must occur before anything else, except for comments and white space\n\u0000"
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14734:20 "Shader failed to compile! Trying last available compilable source!"
+[SEVERE] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14739:24 "No successful compilation is available"
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14793 WebGL: INVALID_VALUE: attachShader: attempt to use a deleted object
+[INFO] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 14803:12 "The program must contain objects to form both a vertex and fragment shader.\n\u0000"
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 17165 WebGL: INVALID_OPERATION: getAttribLocation: program not linked
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 17178 WebGL: INVALID_VALUE: vertexAttribPointer: index out of range
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 17187 WebGL: INVALID_VALUE: enableVertexAttribArray: index out of range
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230657 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316230658 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[SEVERE] 1777316232680 - http://localhost:8001/favicon.ico - Failed to load resource: the server responded with a status of 404 (File not found)
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232685 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.
+[WARNING] 1777316232686 - http://localhost:8001/simulation.html - [.WebGL-0x58f40014b200] GL_INVALID_OPERATION: glDrawArrays: Feedback loop formed between Framebuffer and active Texture.

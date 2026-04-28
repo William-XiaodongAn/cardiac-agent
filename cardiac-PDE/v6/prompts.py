@@ -7,7 +7,7 @@ Always use Markdown cells to present your code.
 '''
 
 code_prompt = """
-Given the {PDEs} and {coding_skeleton}, return the complete code implementation for the PDE solver in WebGL.
+Given the {PDEs}, {coding_skeleton} and boundary condition {bc}, return the complete code implementation for the PDE solver in WebGL (do not put #version 300 es in your codes).
 Output only the raw code. No talk, no markdown, just code.
 """
 
@@ -53,7 +53,19 @@ Output only the raw code. No talk, no markdown, just code.
 """
 
 debug_prompt = """
-Now we have some bugs when using the codes {shader_codes} with the following logs {log_info}.
+The shader code {shader_codes} is producing errors or high RMSE in this context: {context_info}, with the following pdes {PDEs} and boundary conditions {bc}.
 
 Output only the raw code. No talk, no markdown, just code.
+"""
+
+validate_parse_prompt = """
+Given this PDE description:
+{pde_desc}
+
+And this JSON parameter set:
+{json}
+
+Check if the parameters (especially temporal_step with CFL condition) are reasonable for this PDE. 
+Modify any values if needed for stability and accuracy.
+Return the complete modified JSON (or the same JSON if no changes needed).
 """

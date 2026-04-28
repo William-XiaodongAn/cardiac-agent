@@ -1,0 +1,14 @@
+{
+  "PDEs": "\\partial_t u(t, x) + \\partial_x \\left(u(t,x)^2 / 2\\right) = \\nu \\partial_{xx} u(t,x)",
+  "number_of_state_variables": 1,
+  "texture_size": 1024,
+  "spatial_step": 0.0009765625,
+  "domain_size": 1.0,
+  "temporal_step": 1e-07,
+  "time_horizon": 1.0,
+  "boundary_conditions": "Periodic",
+  "parameter_values": {
+    "nu": 1.0
+  },
+  "notes": null
+}

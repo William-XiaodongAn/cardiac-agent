@@ -9,7 +9,8 @@ in vec2 cc, pixPos ;
 layout (location = 0) out vec4 ocolor ;
 
 #define u       color.r
-{{parameters}}
+#define v       color.g
+{{PARAMETER_VALUES}}
 // your codes here for helper function
 
 // your codes here for helper function
@@ -24,7 +25,10 @@ void main() {
     // read the color of the pixel
     vec4 color = texture( inTexture , cc ) ;
 
-
+    // use fract for periodic condition
+    // for example: vec2 prevX = fract(cc - ii);
+    // use clamp for Neumann (no-flux) boundary conditions
+    // for example: vec2 prevX = clamp(cc - ii, 0.0, 1.0);
     // your codes here (do not define helper function)
 
     // your codes here (do not define helper function)

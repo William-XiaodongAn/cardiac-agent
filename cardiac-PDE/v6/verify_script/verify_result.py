@@ -68,7 +68,12 @@ def verify_result(simulation_file_path: str, IC_file_path: str, T_end: float,dow
     
     download_path = Path(download_folder).resolve()
     download_path.mkdir(parents=True, exist_ok=True)
-        
+    
+    target_file = download_path / "result.csv"
+    if target_file.exists():
+        print(f"Removing old {target_file.name} to prevent renaming...")
+        target_file.unlink()
+            
     def start_server():
         """Starts a local server in the specified directory."""
         handler_with_path = partial(SimpleHTTPRequestHandler, directory=simulation_directory)

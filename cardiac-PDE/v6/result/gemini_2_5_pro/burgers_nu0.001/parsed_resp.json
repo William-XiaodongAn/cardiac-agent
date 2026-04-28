@@ -1,0 +1,15 @@
+
+{
+  "PDEs": "\\frac{\\partial u}{\\partial t} + \\frac{\\partial}{\\partial x} \\left( \\frac{u^2}{2} \\right) = \\nu \\frac{\\partial^2 u}{\\partial x^2}",
+  "number_of_state_variables": 1,
+  "texture_size": 1024,
+  "spatial_step": 0.0009765625,
+  "domain_size": 1.0,
+  "temporal_step": 5e-05,
+  "time_horizon": 1.0,
+  "boundary_conditions": "Periodic",
+  "parameter_values": {
+    "nu": 0.001
+  },
+  "notes": "This is the 1D viscous Burgers' equation. The advection term is written in conservative form."
+}

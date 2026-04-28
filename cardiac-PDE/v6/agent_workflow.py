@@ -1,5 +1,5 @@
 import pde_descriptions
-from prompts import system_prompt,parse_prompt,code_prompt,debug_prompt,refine_prompt
+from prompts import system_prompt,parse_prompt,code_prompt,debug_prompt,refine_prompt,validate_parse_prompt
 from verify_script.verify_result import *
 import json
 import ollama
@@ -15,7 +15,6 @@ import argparse
 import pickle
 
 load_dotenv()
-
 class LLMFactory:
     def __init__(self):
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -91,21 +90,17 @@ def parse_agent(LLM:str,pde_name:str,pde_paras:dict):
     pde_desc = getattr(pde_descriptions, pde_name.replace('.','_'))
     pde_desc = pde_desc.format(**pde_paras)
     user_prompt = parse_prompt.format(
-        user_input=pde_name,
+        user_input=pde_desc,
     )
-    user_prompt = f"{pde_desc}\n\n{user_prompt}"
-    
-
     
     response_text = chat_with(LLM_original_name, system_prompt, user_prompt)
     
-    #deleat ```json at beginning of response.text if exist
-    if response_text.startswith("```json"):
-        response_text = response_text[len("```json"):]
-
-    #deleat ``` at end of response.text if exist
-    if response_text.endswith("```"):
-        response_text = response_text[:-3]
+    # prune the response_text to make it a valid json string between the closest '''json and ''' if exist
+    json_pattern = r"```json(.*)```"
+    match = re.search(json_pattern, response_text, re.DOTALL)
+    if match:
+        response_text = match.group(1).strip()
+    
 
     # save json to ./result/{pde_name}/{LLM}/parsed_resp.json
     # create folder it not exist
@@ -117,13 +112,53 @@ def parse_agent(LLM:str,pde_name:str,pde_paras:dict):
 
 def check_parsed_response(LLM:str,pde_name:str):
     '''
-    Check if the parsed response json file is valid and contains all necessary information.
+    Check if the parsed response json file is valid.
+    Let LLM review parameters and save the returned JSON.
     '''
-    if not os.path.exists(f"./result/{LLM}/{pde_name}/parsed_resp.json"):
+    
+    LLM_original_name = LLM
+    LLM_sanitized = re.sub(r'[.\-:]', '_', LLM)
+    if not os.path.exists(f"./result/{LLM_sanitized}/{pde_name}/parsed_resp.json"):
         return False
-    with open(f"./result/{LLM}/{pde_name}/parsed_resp.json", "r", encoding="utf-8") as f:
+
+    
+    with open(f"./result/{LLM_sanitized}/{pde_name}/parsed_resp.json", "r", encoding="utf-8") as f:
         parsed_resp = json.load(f)
     
+    # Get PDE description
+    pde_desc = getattr(pde_descriptions, pde_name.replace('.','_'))
+    pde_paras_file_path = f"./data/{pde_name}/{pde_name}_paras.pkl"
+
+    with open(pde_paras_file_path, 'rb') as f:
+        pde_paras = pickle.load(f)
+    pde_desc = pde_desc.format(**pde_paras)
+
+    
+    # Ask LLM to review and return JSON
+    validation_prompt_text = validate_parse_prompt.format(
+        pde_desc=pde_desc,
+        json=json.dumps(parsed_resp, indent=2)
+    )
+    
+    response_text = chat_with(LLM_original_name, system_prompt, validation_prompt_text)
+    
+    # Extract and save JSON response
+    json_pattern = r"```json\s*(.*?)\s*```|{.*}"
+    json_pattern = r"```json(.*)```"
+    match = re.search(json_pattern, response_text, re.DOTALL)
+    if match:
+        json_str = match.group(1).strip()
+
+    
+    try:
+        updated_resp = json.loads(json_str)
+        with open(f"./result/{LLM_sanitized}/{pde_name}/parsed_resp.json", "w", encoding="utf-8") as f:
+            json.dump(updated_resp, f, indent=2)
+    except:
+        print(f"Warning: Could not parse LLM response, keeping original.")
+    
+    
+    # Check required fields
     required_dict = {"PDEs": str, "number_of_state_variables": int, "texture_size": int, "spatial_step": float, "domain_size": float, "temporal_step": float, "time_horizon": float, "boundary_conditions": object, "parameter_values": dict}
     for key in required_dict.keys():
         if key not in parsed_resp:
@@ -132,7 +167,8 @@ def check_parsed_response(LLM:str,pde_name:str):
         expected_type = required_dict[key]
         if not isinstance(val, expected_type):
             return False
-    print(f"Parsed response for {LLM} and {pde_name} is valid.")
+        
+    print(f"Parsed response for {LLM_original_name} and {pde_name} is valid.")
     return True
 
 def skeleton_prepare(LLM:str,pde_name:str):
@@ -186,7 +222,8 @@ def code_agent(LLM:str,pde_name:str):
         
     user_prompt = code_prompt.format(
         PDEs=parsed_resp["PDEs"],
-        coding_skeleton = updated_coding_skeleton
+        coding_skeleton = updated_coding_skeleton,
+        bc = parsed_resp["boundary_conditions"]
     )
     
   
@@ -232,11 +269,9 @@ def verify_agent(LLM,pde_name,simulation_file_path,IC_file_path,download_folder,
     T_end = parsed_resp["time_horizon"]
     
     logs = verify_result(simulation_file_path, IC_file_path, T_end, download_folder)
-
+    # create the path
+    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
     if logs != "Success":
-        # create the path
-        os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
-        
         with open(log_file_path, "w", encoding="utf-8") as f:
             for entry in logs:
                 # Format: [LEVEL] Timestamp - Message
@@ -245,14 +280,22 @@ def verify_agent(LLM,pde_name,simulation_file_path,IC_file_path,download_folder,
         print(f"Verification failed. Logs saved to {log_file_path}")
         return 1e10
     else:
+
         result = os.path.join(download_folder, "result.csv")
+
         
         result_data = np.loadtxt(result, delimiter=',')
+        result_data = result_data[::4]
         reference_data = load_csv(solution_file_path)
-        
+        reference_data = reference_data[::4]
+
         rmse = np.sqrt(np.mean((result_data - reference_data) ** 2))
         norm = np.sqrt(np.mean(reference_data ** 2))
         normalized_rmse = rmse / norm
+        if not np.isfinite(normalized_rmse):
+            normalized_rmse = 1e10
+        with open(log_file_path, "w", encoding="utf-8") as f:
+            f.write("nRMSE: " + str(normalized_rmse))
         print(f"Verification successful. Normalized RMSE: {normalized_rmse}")
         return normalized_rmse
 
@@ -271,12 +314,23 @@ def debug_agent(LLM,pde_name,log_file_path,bugged_html_path,debugged_html_path):
         pattern = r"<script id='march' type='shader'>(.*?)</script>"
         match = re.search(pattern, html_content, re.DOTALL)
         march_shader_code = match.group(1).strip()
+    
+    if logs.startswith("nRMSE:"):
+        context = f"Current {logs}. The output is numerically inaccurate compared to the ground truth."
+    else:
+        context = f"Execution Logs: {logs}"
+        
+    with open(f"./result/{LLM}/{pde_name}/parsed_resp.json", "r", encoding="utf-8") as f:
+        parsed_resp = json.load(f)      
         
     debug_prompt_text = debug_prompt.format(
         shader_codes = march_shader_code,
-        log_info = logs
+        context_info = context,
+        PDEs = parsed_resp["PDEs"],
+        bc= parsed_resp["boundary_conditions"]
     )
-
+    
+  
     response_text = chat_with(LLM_original_name, system_prompt, debug_prompt_text)
     if response_text.startswith("```glsl"):
         response_text = response_text[len("```glsl"):]
@@ -293,7 +347,9 @@ def debug_agent(LLM,pde_name,log_file_path,bugged_html_path,debugged_html_path):
     with open(f"./result/{LLM}/{pde_name}/skeleton.html", 'r') as f:
         html_content = f.read()
     updated_html = html_content.replace('{{MARCH_SHADER_CODE}}', response_text)
-    with open(debugged_html_path, 'w') as f:
+    
+    
+    with open(debugged_html_path, 'w', encoding='utf-8') as f:
         f.write(updated_html)
         
     
@@ -318,6 +374,13 @@ def main():
         help="The number of debugging trials when the simulation fails. Default is 5."
     )
     
+    parser.add_argument(
+        "--scale_times",
+        default=5,
+        type=int,
+        help = "scaling times to repeat"
+    )
+    
     args = parser.parse_args()
     LLM_sanitized = re.sub(r'[.\-:]', '_', args.LLM)
     if args.mode == "dry_run":
@@ -337,7 +400,10 @@ def main():
         solution_folder = f"./data/{args.pde}/train"
         solution_files = [f for f in os.listdir(solution_folder) if f.endswith(('.csv')) and f.startswith("solution_")] # solution_0.csv,solution_1.csv,...
         
-        while not check_parsed_response(LLM_sanitized,args.pde):
+        # delete original parsed_response:
+        os.remove(f"./result/{LLM_sanitized}/{args.pde}/parsed_resp.json") if os.path.exists(f"./result/{LLM_sanitized}/{args.pde}/parsed_resp.json") else None
+        
+        while not check_parsed_response(args.LLM,args.pde):
             parse_agent(args.LLM,args.pde,pde_paras)
         simulation_file_path = code_agent(args.LLM,args.pde)
         debugged_file_path = simulation_file_path
@@ -369,9 +435,10 @@ def main():
                 new_log_file_path = f"{download_folder}/log.txt"
                 normalized_rmse = verify_agent(args.LLM,args.pde,debugged_file_path,IC_file,download_folder,new_log_file_path,solution_file)
                 log_file_path = new_log_file_path  # Update for next debug iteration if needed
-
+                simulation_file_path = debugged_file_path  # Update simulation file path for next verification
             nrmse_list.append(normalized_rmse)
         print(debugged_times_used, nrmse_list)
         
 if __name__ == "__main__":
     main()
+    

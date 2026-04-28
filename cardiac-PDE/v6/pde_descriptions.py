@@ -106,7 +106,7 @@ Model Parameters are:
 
 - The domain is $x \\in [0,1]$ with $dx \\approx 9.765625 \\times 10^{{-4}}$
 
-- Time horizon is $T=1.0$ with $dt < 1.0 \\times 10^{{-3}}$
+- Time horizon is $T=1.0$ with $dt < 1.0 \\times 10^{{-4}}$
 
 - Use periodic boundary conditions.
 
@@ -135,11 +135,11 @@ Model Parameters are:
 
     **Important implementation notes**:
 
-- Use **512 interior spatial points**
+- Use **128 interior spatial points**
 
-- The domain is $x \\in [-1,1]$ with $dx \\approx 3.90625 \\times 10^{{-3}}$
+- The domain is $x \\in [-1,1]$ with $dx \\approx 1.5625 \\times 10^{{-2}}$
 
-- Time horizon is $T=5.0$ with $dt < 1.0 \\times 10^{{-3}}$
+- Time horizon is $T=1.0$ with $dt < 1.0 \\times 10^{{-4}}$
 
 - Use No-Flux (Neumann) boundary conditions.
 
@@ -147,5 +147,5 @@ Model Parameters are:
 
 advection_beta0_1 = advection
 advection_beta1_0 = advection
-burgers_nu_0_001 = burgers
-burgers_nu_1_0 = burgers
+burgers_nu0_001 = burgers
+burgers_nu1_0 = burgers
