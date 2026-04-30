@@ -26,8 +26,8 @@ void main() {
 
     // use fract for periodic condition
     // for example: vec2 prevX = fract(cc - ii);
-    // use clamp for Neumann (no-flux) boundary conditions
-    // for example: vec2 prevX = clamp(cc - ii, 0.0, 1.0);
+    // Neumann (no-flux) boundary conditions in default
+    // for example: vec2 prevX = cc - ii;
     // your codes here (do not define helper function)
 
     // your codes here (do not define helper function)

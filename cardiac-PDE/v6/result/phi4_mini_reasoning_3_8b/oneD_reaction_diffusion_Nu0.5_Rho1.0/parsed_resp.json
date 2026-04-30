@@ -1,0 +1,11 @@
+{
+  "PDEs": "\\frac{\\partial u}{\\partial t} - \\nu\\\\nabla^2u(t,x) − ρ u(t,x)(1−u(t,x)) =0",
+  "number_of_state_variables": 3,
+  "texture_size": 512,
+  "spatial_step": 9.765625e-4,
+  "domain_size": 1.0,
+  "temporal_step": 0.001,
+  "time_horizon": 100.0,
+  "boundary_conditions": "Periodic",
+  "parameter_values": {"D": 0.001, "C_m": 1.0, "tau_pv":7.99}
+}

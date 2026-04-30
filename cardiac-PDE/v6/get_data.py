@@ -29,6 +29,10 @@ links['2D_diff-react_NA_NA.h5'] = 'https://darus.uni-stuttgart.de/api/access/dat
 pde_names['2D_diff-react_NA_NA.h5'] = 'twoD_reaction_diffusion'
 paras['2D_diff-react_NA_NA.h5'] = {    "D_u": 0.001,    "D_v": 0.005,    "k": 0.005} 
 
+links['ReacDiff_Nu0.5_Rho1.0.hdf5'] = 'https://darus.uni-stuttgart.de/api/access/datafile/133177'
+pde_names['ReacDiff_Nu0.5_Rho1.0.hdf5'] = 'oneD_reaction_diffusion_Nu0.5_Rho1.0'
+paras['ReacDiff_Nu0.5_Rho1.0.hdf5'] = {    "nu": 0.5,    "rho": 1.0} 
+
 links['fk.h5'] = ''
 pde_names['fk.h5'] = 'fenton_karma'
 paras['fk.h5'] = {} 
@@ -53,7 +57,9 @@ def transform_1D_to_2D(data_1D, xcoor):
 
 def main():
     for filename in links.keys():
-        
+        if filename != 'ReacDiff_Nu0.5_Rho1.0.hdf5':
+            continue
+            
         url = links[filename]
         pde_name = pde_names[filename]
         para = paras[filename]

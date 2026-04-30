@@ -1,0 +1,15 @@
+{
+  "PDEs": "\\frac{\\partial u}{\\partial t} = \\nu \\frac{\\partial^2 u}{\\partial x^2} + \\rho u (1 - u)",
+  "number_of_state_variables": 1,
+  "texture_size": 1024,
+  "spatial_step": 0.0009765625,
+  "domain_size": 1.0,
+  "temporal_step": 9e-07,
+  "time_horizon": 1.0,
+  "boundary_conditions": "Periodic",
+  "parameter_values": {
+    "nu": 0.5,
+    "rho": 1.0
+  },
+  "notes": "The problem description contains contradictory information regarding the dimensionality. While it mentions a '2D reaction-diffusion model' and 'x \\in (0,1)^2', other details such as the specific PDE notation (only \\partial_{xx}), the explicitly stated spatial domain '\\Omega = [0,1]', and the expected output array shape '[batch_size, T+1, N]' strongly suggest a 1D spatial simulation. This JSON object interprets the problem as a 1D spatial simulation with N=1024 spatial points. The note about 'Source term handled via Piecewise-Exact Solution' refers to an implementation detail for the reaction term, not a modification of the PDE itself. \n\nIMPORTANT MODIFICATION: The 'temporal_step' was adjusted from 9e-05 to 9e-07. This change is critical for numerical stability, especially if an explicit time-stepping scheme (like Explicit Euler) is used for the diffusion term. The stability criterion for the explicit treatment of the diffusion term is dt <= dx^2 / (2*nu).\n\nCalculations:\n- dx = 0.0009765625\n- nu = 0.5\n- Maximum stable dt for diffusion = (0.0009765625)^2 / (2 * 0.5) = 9.5367431640625e-07\n\nThe original 'temporal_step' of 9e-05 was significantly larger than this maximum stable value, which would lead to numerical instability. The new value, 9e-07, is chosen to be slightly less than the calculated maximum stable dt, ensuring stability for an explicit diffusion solver. While the reaction term's 'Piecewise-Exact Solution' might relax its stability constraint, the diffusion term's explicit stability condition remains the most restrictive for common numerical methods."
+}

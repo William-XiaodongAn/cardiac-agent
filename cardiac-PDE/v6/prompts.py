@@ -2,18 +2,19 @@ system_prompt = '''
 You are an intelligent AI researcher for coding, numerical algorithms, and scientific computing.
 Your goal is to conduct cutting-edge research in the field of PDE solving by leveraging and creatively improving existing algorithms to maximize performances based on feedbacks.
 Follow the user's requirements carefully and make sure you understand them.
-Always document your code as comments to explain the reason behind them.
 Always use Markdown cells to present your code.
 '''
 
 code_prompt = """
-Given the {PDEs}, {coding_skeleton} and boundary condition {bc}, return the complete code implementation for the PDE solver in WebGL (do not put #version 300 es in your codes).
-Output only the raw code. No talk, no markdown, just code.
+Given the {PDEs}, {coding_skeleton}, boundary condition {bc} and notes {notes}, return the complete glsl code implementation for the PDE solver in WebGL (do not put #version 300 es in your codes).
+Output only the raw glsl code. No talk, no markdown, just code.
 """
 
 parse_prompt = """
 You are given a clarified simulation specification intended for webGL.
 Your task is to parse this paragraph into a structured JSON object that captures all key attributes needed for code generation.
+Output only the JSON. No talk, no markdown.
+
 
 ### JSON Schema Requirements:
 1. "PDEs": String. Full PDEs using LaTeX. IMPORTANT: Use double backslashes (e.g., \\nabla) for all LaTeX commands to ensure valid JSON escaping. When there is a new line, use \n.

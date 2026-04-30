@@ -64,6 +64,14 @@ class LLMFactory:
         response = self.ollama_client.chat(model=model, messages=messages)
         return response['message']['content']
 
+    def ask_ollama_local(self, model, user_prompt):
+        messages = []
+        
+        messages.append({'role': 'user', 'content': user_prompt})
+        
+        response = ollama.chat(model=model, messages=messages)
+        return response['message']['content']
+    
 # --- The Router Function ---
 def chat_with(model_name, system_prompt, user_prompt):
     factory = LLMFactory()
@@ -75,9 +83,11 @@ def chat_with(model_name, system_prompt, user_prompt):
         return factory.ask_claude(model_name, system_prompt, user_prompt)
     elif "gemini" in m_lower:
         return factory.ask_gemini(model_name, system_prompt, user_prompt)
-    else:
+    elif "cloud" in m_lower:
         return factory.ask_ollama(model_name, user_prompt)
-
+    else:
+        return factory.ask_ollama_local(model_name, user_prompt)
+        
 
 def parse_agent(LLM:str,pde_name:str,pde_paras:dict):
     '''
@@ -94,6 +104,8 @@ def parse_agent(LLM:str,pde_name:str,pde_paras:dict):
     )
     
     response_text = chat_with(LLM_original_name, system_prompt, user_prompt)
+    # deleat <think> *</think> if exist
+    response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL).strip()
     
     # prune the response_text to make it a valid json string between the closest '''json and ''' if exist
     json_pattern = r"```json(.*)```"
@@ -194,17 +206,17 @@ def skeleton_prepare(LLM:str,pde_name:str):
     
     coding_skeleton_file = f"./skeleton_script/{parsed_resp['number_of_state_variables']}V/skeleton.html"
     # Load the file
-    with open(coding_skeleton_file, 'r') as f:
+    with open(coding_skeleton_file, 'r', encoding='utf-8') as f:
         html_template = f.read()
 
     # Replace placeholders with your Python variables
     updated_html = html_template.replace('{{DT_VALUE}}', str(temporal_step)).replace('{{DX_VALUE}}', str(spatial_step))
     updated_html = updated_html.replace('{{TEXTURE_VALUE}}', str(texture_size))
     
-    with open(f"./result/{LLM}/{pde_name}/skeleton.html", 'w') as f:
+    with open(f"./result/{LLM}/{pde_name}/skeleton.html", 'w', encoding='utf-8') as f:
         f.write(updated_html)
     
-    with open(f"./skeleton_script/{parsed_resp['number_of_state_variables']}V/march_skeleton.frag", 'r') as f:
+    with open(f"./skeleton_script/{parsed_resp['number_of_state_variables']}V/march_skeleton.frag", 'r', encoding='utf-8') as f:
         coding_skeleton = f.read()
     updated_coding_skeleton = coding_skeleton.replace('{{PARAMETER_VALUES}}', parameter_str)
     return updated_coding_skeleton
@@ -223,33 +235,32 @@ def code_agent(LLM:str,pde_name:str):
     user_prompt = code_prompt.format(
         PDEs=parsed_resp["PDEs"],
         coding_skeleton = updated_coding_skeleton,
-        bc = parsed_resp["boundary_conditions"]
+        bc = parsed_resp["boundary_conditions"],
+        notes = parsed_resp.get("notes", "null")
     )
     
   
     response_text = chat_with(LLM_original_name, system_prompt, user_prompt)
     
-    #deleat ```glsl at beginning of response.text if exist
-    if response_text.startswith("```glsl"):
-        response_text = response_text[len("```glsl"):]
-
-    # #deleat ``` at end of response.text if exist
-    if response_text.endswith("```"):
-        response_text = response_text[:-3]  
+    # find codes between ```glsl and ``` if exist
+    glsl_pattern = r"```glsl(.*)```"
+    match = re.search(glsl_pattern, response_text, re.DOTALL)
+    if match:
+        response_text = match.group(1).strip()
 
     with open(f"./result/{LLM}/{pde_name}/march_shader.frag", "w", encoding="utf-8") as f:
         f.write(response_text)
         
     # replace march shader script in skeleton.html with the generated march shader code
-    with open(f'./result/{LLM}/{pde_name}/skeleton.html', 'r') as f:
+    with open(f'./result/{LLM}/{pde_name}/skeleton.html', 'r', encoding='utf-8') as f:
         html_content = f.read()
         
-    with open(f'./result/{LLM}/{pde_name}/march_shader.frag', 'r') as f:    
+    with open(f'./result/{LLM}/{pde_name}/march_shader.frag', 'r', encoding='utf-8') as f:    
         march_shader_code = f.read()
         
     updated_html = html_content.replace('{{MARCH_SHADER_CODE}}', march_shader_code)
 
-    with open(f'./result/{LLM}/{pde_name}/simulation.html', 'w') as f:
+    with open(f'./result/{LLM}/{pde_name}/simulation.html', 'w', encoding='utf-8') as f:
         f.write(updated_html)
     simulation_file_path = f'./result/{LLM}/{pde_name}/simulation.html'
     print(f"Simulation code saved to {simulation_file_path}")
@@ -306,7 +317,7 @@ def debug_agent(LLM,pde_name,log_file_path,bugged_html_path,debugged_html_path):
     
     with open(log_file_path, "r", encoding="utf-8") as f:
         logs = f.read()
-    with open(bugged_html_path, "r") as f:
+    with open(bugged_html_path, "r", encoding='utf-8') as f:
         # find codes between
         # <script id='march' type='shader'>#version 300 es
         # </script>
@@ -344,7 +355,7 @@ def debug_agent(LLM,pde_name,log_file_path,bugged_html_path,debugged_html_path):
     
     # save to html
     os.makedirs(os.path.dirname(debugged_html_path), exist_ok=True)
-    with open(f"./result/{LLM}/{pde_name}/skeleton.html", 'r') as f:
+    with open(f"./result/{LLM}/{pde_name}/skeleton.html", 'r', encoding='utf-8') as f:
         html_content = f.read()
     updated_html = html_content.replace('{{MARCH_SHADER_CODE}}', response_text)
     
@@ -359,7 +370,7 @@ def main():
     parser.add_argument("--LLM", help="The name of LLM")
     parser.add_argument(
             "--pde", 
-            choices=["advection_beta0.1","advection_beta1.0", "burgers_nu0.001","burgers_nu1.0","twoD_reaction_diffusion","fenton_karma"], 
+            choices=["advection_beta0.1","advection_beta1.0", "burgers_nu0.001","burgers_nu1.0","twoD_reaction_diffusion","oneD_reaction_diffusion_Nu0.5_Rho1.0","fenton_karma"], 
             help="pde has to be one of advection, burgers, twoD_reaction_diffusion, or fenton_karma."
         )
     parser.add_argument(
@@ -421,7 +432,7 @@ def main():
             log_file_path = f"{download_folder}/log.txt"
             normalized_rmse = verify_agent(args.LLM,args.pde,simulation_file_path,IC_file,download_folder,log_file_path,solution_file)
             # save the normalized_rmse to a txt file
-            with open(f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}/normalized_rmse.txt", "w") as f:
+            with open(f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}/normalized_rmse.txt", "w", encoding="utf-8") as f:
                 f.write(str(normalized_rmse))
             
             while normalized_rmse > 0.1 and debugged_times_used < args.debug_trail_times:

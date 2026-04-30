@@ -1,0 +1,12 @@
+{
+  "PDEs": "\\partial_t u + \\partial_x (u(t,x)^2) / 2 = \\nu / 3.1415926 * \\partial_{xx} u",
+  "number_of_state_variables": 1,
+  "texture_size": 1024,
+  "spatial_step": 0.0009765625,
+  "domain_size": 1.0,
+  "temporal_step": 0.0001,
+  "time_horizon": 2.0,
+  "boundary_conditions": "periodic",
+  "parameter_values": {"nu": 1.0},
+  "notes": "Use 1024 interior spatial points. Domain is x ∈ [0,1] with dx ≈ 9.765625 × 10^-4. Time horizon T=2.0 with dt < 1.0 × 10^-4. Use periodic boundary conditions."
+}

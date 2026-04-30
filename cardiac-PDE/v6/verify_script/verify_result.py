@@ -27,7 +27,7 @@ def load_IC(simulation_file_path: str, IC_file_path: str, T_end: float = 100.0) 
     
     simulation_file_path = destination
     
-    with open(simulation_file_path, 'r') as f:
+    with open(simulation_file_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
     # Regex pattern to find the content between //IC markers
@@ -51,7 +51,7 @@ def load_IC(simulation_file_path: str, IC_file_path: str, T_end: float = 100.0) 
     )
     
     # Write the modified content back to the file
-    with open(simulation_file_path, 'w') as f:
+    with open(simulation_file_path, 'w', encoding='utf-8') as f:
         f.write(new_content)
     return simulation_file_path
 

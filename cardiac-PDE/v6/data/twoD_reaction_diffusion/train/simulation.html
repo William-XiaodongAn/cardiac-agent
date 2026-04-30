@@ -70,65 +70,98 @@ void main() {
 </script>
 
 <script id='march' type='shader'>#version 300 es
-precision highp float;
-precision highp int;
+precision highp float ;
+precision highp int ;
 
-uniform sampler2D   inTexture;
+uniform sampler2D   inTexture ;
 uniform float       dt, dx, dy;
 
-in vec2 cc, pixPos;
+in vec2 cc, pixPos ;
 
-layout (location = 0) out vec4 ocolor;
+layout (location = 0) out vec4 ocolor ;
 
-// Convenience macros
-#define u color.r
-#define v color.g
+#define u       color.r
+#define v       color.g
+    const float D_u = 0.001;
+    const float D_v = 0.005;
+    const float k = 0.005;
+// your codes here for helper function
 
-const float D_u = 0.001;
-const float D_v = 0.005;
-const float k   = 0.005;
+// your codes here for helper function
 
+// Main body of the shader
 void main() {
-    // Texture size
-    vec2 size = vec2(textureSize(inTexture, 0));
-    vec2 ii = vec2(1.0, 0.0) / size; // (Δx, 0)
-    vec2 jj = vec2(0.0, 1.0) / size; // (0, Δy)
+    vec2  size  = vec2(textureSize(inTexture, 0)) ;
 
-    // Sample current value
-    vec4 color = texture(inTexture, cc);
-    float u_val = color.r;
-    float v_val = color.g;
+    // ii and jj represent the normalized step size to move one pixel in x and y directions
+    vec2 ii = vec2(1.,0.)/size ;
+    vec2 jj = vec2(0.,1.)/size ;
 
-    // Neumann boundary: clamp to texture space [0,1]
-    vec2 ccL = clamp(cc - ii, 0.0, 1.0);
-    vec2 ccR = clamp(cc + ii, 0.0, 1.0);
-    vec2 ccD = clamp(cc - jj, 0.0, 1.0);
-    vec2 ccU = clamp(cc + jj, 0.0, 1.0);
+    // Read the current pixel's color (u and v values)
+    vec4 current_color = texture( inTexture , cc ) ;
+    float u_curr = current_color.r;
+    float v_curr = current_color.g;
 
-    // Sample neighboring values
-    float uL = texture(inTexture, ccL).r;
-    float uR = texture(inTexture, ccR).r;
-    float uD = texture(inTexture, ccD).r;
-    float uU = texture(inTexture, ccU).r;
+    // Sample neighbor pixels. These samples might be from outside the texture if at a boundary,
+    // in which case the values will be corrected for Neumann conditions.
+    vec4 color_L = texture(inTexture, cc - ii); // Left neighbor
+    vec4 color_R = texture(inTexture, cc + ii); // Right neighbor
+    vec4 color_D = texture(inTexture, cc - jj); // Down neighbor
+    vec4 color_U = texture(inTexture, cc + jj); // Up neighbor
 
-    float vL = texture(inTexture, ccL).g;
-    float vR = texture(inTexture, ccR).g;
-    float vD = texture(inTexture, ccD).g;
-    float vU = texture(inTexture, ccU).g;
+    // Extract u and v components from neighbors
+    float u_L = color_L.r;
+    float u_R = color_R.r;
+    float u_D = color_D.r;
+    float u_U = color_U.r;
 
-    // Laplacians
-    float lapU = (uL - 2.0 * u_val + uR) / (dx * dx) + (uD - 2.0 * u_val + uU) / (dy * dy);
-    float lapV = (vL - 2.0 * v_val + vR) / (dx * dx) + (vD - 2.0 * v_val + vU) / (dy * dy);
+    float v_L = color_L.g;
+    float v_R = color_R.g;
+    float v_D = color_D.g;
+    float v_U = color_U.g;
 
-    // Time derivatives (forward Euler)
-    float du = D_u * lapU + u_val - u_val * u_val * u_val - k - v_val;
-    float dv = D_v * lapV + u_val - v_val;
+    // Apply Neumann boundary conditions (no-flux) using integer pixel coordinates
+    // pixPos contains the integer coordinates of the current pixel (0 to size-1)
+    if (pixPos.x == 0.0) { // At left boundary (first column)
+        u_L = u_R;
+        v_L = v_R;
+    }
+    if (pixPos.x == size.x - 1.0) { // At right boundary (last column)
+        u_R = u_L;
+        v_R = v_L;
+    }
+    if (pixPos.y == 0.0) { // At bottom boundary (first row)
+        u_D = u_U;
+        v_D = v_U;
+    }
+    if (pixPos.y == size.y - 1.0) { // At top boundary (last row)
+        u_U = u_D;
+        v_U = v_D;
+    }
 
-    // Update
-    float u_new = u_val + dt * du;
-    float v_new = v_val + dt * dv;
+    // Calculate the Laplacian (second spatial derivative) for u and v
+    // using central finite differences.
+    float laplacian_u = (u_L - 2.0 * u_curr + u_R) / (dx * dx) +
+                        (u_D - 2.0 * u_curr + u_U) / (dy * dy);
 
-    ocolor = vec4(u_new, v_new, 0.0, 1.0);
+    float laplacian_v = (v_L - 2.0 * v_curr + v_R) / (dx * dx) +
+                        (v_D - 2.0 * v_curr + v_U) / (dy * dy);
+
+    // Calculate the reaction terms for u and v
+    float reaction_u = u_curr - u_curr * u_curr * u_curr - k - v_curr;
+    float reaction_v = u_curr - v_curr;
+
+    // Calculate the time derivatives (du/dt and dv/dt)
+    float d_u_dt = D_u * laplacian_u + reaction_u;
+    float d_v_dt = D_v * laplacian_v + reaction_v;
+
+    // Update u and v using explicit Euler method
+    float u_new = u_curr + dt * d_u_dt;
+    float v_new = v_curr + dt * d_v_dt;
+
+    // Output the new u and v values to the output color buffer
+    ocolor = vec4(u_new, v_new, current_color.b, current_color.a);
+    return ;
 }
 </script>
 
@@ -150,7 +183,7 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 1e-05,
+        dt : 0.0001 ,
         time : 0 ,
         dx : 0.015625,
         running : false ,
@@ -259,7 +292,7 @@ env.saveCsvFile = function() {
 
 //IC
 const IC_url = 'IC_0.csv';
-const T_end = 10.0;
+const T_end = 1.0;
 //IC
 
 function loadCsv(url) {

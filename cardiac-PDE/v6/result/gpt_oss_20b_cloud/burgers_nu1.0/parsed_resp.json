@@ -1,5 +1,5 @@
 {
-  "PDEs": "\\partial_t u(t,x)+\\partial_x\\left(u(t,x)^2\\right)/2=\\nu/3.1415926*\\partial_{xx} u(t,x)",
+  "PDEs": "\\frac{\\partial u}{\\partial t} + \\frac{\\partial}{\\partial x}\\left(\\frac{u^2}{2}\\right) = \\frac{\\nu}{3.1415926}\\frac{\\partial^2 u}{\\partial x^2}\\n",
   "number_of_state_variables": 1,
   "texture_size": 1024,
   "spatial_step": 0.0009765625,

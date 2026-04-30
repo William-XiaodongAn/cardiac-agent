@@ -1,0 +1,147 @@
+[INFO] 1777499672248 - https://abubujs.org/libs/Abubu.latest.js 14591:8 "***********************************"
+[INFO] 1777499672248 - https://abubujs.org/libs/Abubu.latest.js 14592:8 "Abubu " "v6.9.04"
+[INFO] 1777499672248 - https://abubujs.org/libs/Abubu.latest.js 14593:8 "Updated on" "Wed 20 Sep 2023 15:53:43 (EDT)"
+[INFO] 1777499672248 - https://abubujs.org/libs/Abubu.latest.js 14594:8 "Developed by Abouzar Kaboudian!"
+[INFO] 1777499672248 - https://abubujs.org/libs/Abubu.latest.js 14595:8 "For support email: abouzar.kaboudian@physics.gatech.edu"
+[INFO] 1777499672248 - https://abubujs.org/libs/Abubu.latest.js 14596:8 "***********************************"
+[INFO] 1777499672272 - https://abubujs.org/libs/Abubu.latest.js 14632:12 "WebGL 2.0 context successfully initialized!"
+[INFO] 1777499672272 - https://abubujs.org/libs/Abubu.latest.js 27308:12 "Loaded the library without using require.js..."
+[INFO] 1777499672417 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "1\t" "#version 300 es"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "2\t" "precision highp float;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "3\t" "precision highp int;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "4\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "5\t" "uniform sampler2D   inTexture ;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "6\t" "uniform float       dt, dx, dy;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "7\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "8\t" "in vec2 cc, pixPos ;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "9\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "10\t" "layout (location = 0) out vec4 ocolor ;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "11\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "12\t" "#define u       color.r"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "13\t" "const float nu = 1.0;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "14\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "15\t" "void main() {"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "16\t" "    vec2 size = vec2(textureSize(inTexture, 0));"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "17\t" "    vec2 ii = vec2(1.0, 0.0) / size;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "18\t" "    vec2 jj = vec2(0.0, 1.0) / size;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "19\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "20\t" "    vec2 left_pos = vec2(fract(cc.x - dx), 0.0);"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "21\t" "    vec2 right_pos = vec2(fract(cc.x + dx), 0.0);"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "22\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "23\t" "    vec4 color = texture(inTexture, cc);"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "24\t" "    float u = color.r;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "25\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "26\t" "    vec4 u_left = texture(inTexture, left_pos);"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "27\t" "    vec4 u_right = texture(inTexture, right_pos);"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "28\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "29\t" "    float d2u = (u_right.r - 2.0 * u + u_left.r) / (dx * dx);"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "30\t" "    float d1u = (u_right.r - u_left.r) / (2.0 * dx);"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "31\t" "    float adv_term = u * d1u;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "32\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "33\t" "    float rhs = (1.0 / 3.1415926) * d2u - adv_term;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "34\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "35\t" "    float new_u = u + dt * rhs;"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "36\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "37\t" "    ocolor = vec4(new_u, 0.0, 0.0, 1.0);"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "38\t" "}"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "39\t" ""
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14723:16 "ERROR: 0:24: 'color' : redefinition\nERROR: 0:24: '.' : syntax error\n\u0000"
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14734:20 "Shader failed to compile! Trying last available compilable source!"
+[SEVERE] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14739:24 "No successful compilation is available"
+[WARNING] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14793 WebGL: INVALID_VALUE: attachShader: attempt to use a deleted object
+[INFO] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 14803:12 "The program must contain objects to form both a vertex and fragment shader.\n\u0000"
+[WARNING] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 17165 WebGL: INVALID_OPERATION: getAttribLocation: program not linked
+[WARNING] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 17178 WebGL: INVALID_VALUE: vertexAttribPointer: index out of range
+[WARNING] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 17187 WebGL: INVALID_VALUE: enableVertexAttribArray: index out of range
+[WARNING] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672418 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[INFO] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "1\t" "#version 300 es"
+[INFO] 1777499672419 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "2\t" "precision highp float;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "3\t" "precision highp int;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "4\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "5\t" "uniform sampler2D   inTexture ;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "6\t" "uniform float       dt, dx, dy;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "7\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "8\t" "in vec2 cc, pixPos ;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "9\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "10\t" "layout (location = 0) out vec4 ocolor ;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "11\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "12\t" "#define u       color.r"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "13\t" "const float nu = 1.0;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "14\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "15\t" "void main() {"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "16\t" "    vec2 size = vec2(textureSize(inTexture, 0));"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "17\t" "    vec2 ii = vec2(1.0, 0.0) / size;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "18\t" "    vec2 jj = vec2(0.0, 1.0) / size;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "19\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "20\t" "    vec2 left_pos = vec2(fract(cc.x - dx), 0.0);"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "21\t" "    vec2 right_pos = vec2(fract(cc.x + dx), 0.0);"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "22\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "23\t" "    vec4 color = texture(inTexture, cc);"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "24\t" "    float u = color.r;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "25\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "26\t" "    vec4 u_left = texture(inTexture, left_pos);"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "27\t" "    vec4 u_right = texture(inTexture, right_pos);"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "28\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "29\t" "    float d2u = (u_right.r - 2.0 * u + u_left.r) / (dx * dx);"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "30\t" "    float d1u = (u_right.r - u_left.r) / (2.0 * dx);"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "31\t" "    float adv_term = u * d1u;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "32\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "33\t" "    float rhs = (1.0 / 3.1415926) * d2u - adv_term;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "34\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "35\t" "    float new_u = u + dt * rhs;"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "36\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "37\t" "    ocolor = vec4(new_u, 0.0, 0.0, 1.0);"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "38\t" "}"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14569:16 "39\t" ""
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14723:16 "ERROR: 0:24: 'color' : redefinition\nERROR: 0:24: '.' : syntax error\n\u0000"
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14734:20 "Shader failed to compile! Trying last available compilable source!"
+[SEVERE] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14739:24 "No successful compilation is available"
+[WARNING] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14793 WebGL: INVALID_VALUE: attachShader: attempt to use a deleted object
+[INFO] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 14803:12 "The program must contain objects to form both a vertex and fragment shader.\n\u0000"
+[WARNING] 1777499672420 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17165 WebGL: INVALID_OPERATION: getAttribLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17178 WebGL: INVALID_VALUE: vertexAttribPointer: index out of range
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17187 WebGL: INVALID_VALUE: enableVertexAttribArray: index out of range
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16117 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 17280 WebGL: INVALID_OPERATION: useProgram: program not valid
+[WARNING] 1777499672421 - https://abubujs.org/libs/Abubu.latest.js 16161 WebGL: INVALID_OPERATION: getUniformLocation: program not linked
+[SEVERE] 1777499674473 - http://localhost:8001/favicon.ico - Failed to load resource: the server responded with a status of 404 (File not found)
