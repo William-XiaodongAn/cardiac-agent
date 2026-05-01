@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "status": "execution_error",
+  "exec_time_s": 0.12526702880859375,
+  "error": "Traceback (most recent call last):\n  File \"/var/folders/r8/4mm7zt6x0770pz1ybpv564xh0000gn/T/tmp5pkjc24p/run_solver.py\", line 124, in <module>\n    u_pred, v_pred, w_pred = solver(\n                             ~~~~~~^\n        _args[\"u0\"], _args[\"v0\"], _args[\"w0\"],\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        _args[\"t_coordinate\"], _args[\"tau_d\"],\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/var/folders/r8/4mm7zt6x0770pz1ybpv564xh0000gn/T/tmp5pkjc24p/run_solver.py\", line 50, in solver\n    raise ValueError(f\"Time step dt={dt} exceeds stability limit {max_dt_diffusion} for diffusion. Reduce dt to avoid numerical instability.\")\nValueError: Time step dt=10.0 exceeds stability limit 0.3814697265625 for diffusion. Reduce dt to avoid numerical instability.\n"
+}
