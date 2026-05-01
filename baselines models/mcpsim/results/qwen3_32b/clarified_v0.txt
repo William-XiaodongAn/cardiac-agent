@@ -1,0 +1,25 @@
+The 2D Fenton-Karma three-variable (3V) cardiac electrophysiology model is simulated on a 512×512 Cartesian grid with spatial step dx = 10/512 ≈ 0.01953125 (domain size 10×10 units). The system evolves variables u(t,x,y) (transmembrane potential), v(t,x,y), and w(t,x,y) (gating variables) via the PDE system:  
+1. **u equation**:  
+   ∂u/∂t = D·∇²u - (I_fi + I_so + I_si)/C_m  
+   where ∇²u is discretized with 5-point finite differences (Neumann BCs enforced via ghost cell mirroring).  
+2. **v equation**:  
+   ∂v/∂t = (1−v)/τ_mv if u < V_c, else −v/τ_pv, with τ_mv = (1−H(u−V_v))·τ_v1 + H(u−V_v)·τ_v2.  
+3. **w equation**:  
+   ∂w/∂t = (1−w)/τ_mw if u < V_c, else −w/τ_pw.  
+
+**Ionic currents**:  
+- I_fi = −v·H(u−V_c)·(u−V_c)(1−u)/τ_d  
+- I_so = u·(1−H(u−V_c))/τ_0 + H(u−V_c)/τ_r  
+- I_si = −w·(1 + tanh(k(u−V_csi)))/(2τ_si)  
+
+**Parameters**: D=0.001, C_m=1.0, τ_pv=7.99, τ_v1=9.8, τ_v2=312.5, τ_pw=870.0, τ_mw=41.0, τ_0=12.5, τ_r=33.83, τ_si=29.0, k=10.0, V_csi=0.861, V_c=0.13, V_v=0.04, τ_d=0.5714.  
+
+**Time integration**: Explicit 4th-order Runge-Kutta with fixed step dt=0.025 (total steps: 4000 for T=100). Outputs are saved at t=0,10,...,100 (11 snapshots), each with shape (512,512,3) for [u,v,w].  
+
+**Boundary conditions**: Homogeneous Neumann (∂u/∂n=0, ∂v/∂n=0, ∂w/∂n=0) implemented via symmetric ghost cell values.  
+
+**Initial conditions**: User-defined; default u(x,y,0)=0, v(x,y,0)=0, w(x,y,0)=0 unless specified otherwise.  
+
+**Stability**: dt=0.025 ensures CFL condition for explicit Laplacian (D·dt/dx² ≈ 0.001·0.025/(0.01953125²) ≈ 0.66 < 1). Piecewise conditions (H(u−V_c), H(u−V_v)) are evaluated with exact threshold comparisons (no smoothing).  
+
+**Output format**: 3D NumPy arrays (time, x, y, variables) with single-precision floats, saved as compressed .npz files.

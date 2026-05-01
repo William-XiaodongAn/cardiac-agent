@@ -1,0 +1,6 @@
+numpy
+google-genai
+openai
+anthropic
+ollama
+python-dotenv
