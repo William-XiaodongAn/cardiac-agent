@@ -57,7 +57,7 @@ Return exactly one Python code block with the complete fixed solver:
 
 DEBUG_NAN_INF_PROMPT = """\
 The solver code ran without crashing, but the output contains NaN or Inf values, \
-or the normalized RMSE is very high ({nrmse:.4f}).
+or the normalized RMSE is very high ({nrmse:.4g}).
 
 Code output:
 {code_output}

@@ -155,10 +155,11 @@ def run_pipeline(
         _save_metrics(output_dir, version_tag, metrics_dict)
 
         nrmse = metrics_dict["nrmse_u_final"]
-        print(f"  nRMSE(u, final): {nrmse:.6f}")
-        print(f"  nRMSE(u, all):   {metrics_dict['nrmse_u']:.6f}")
-        print(f"  nRMSE(v, all):   {metrics_dict['nrmse_v']:.6f}")
-        print(f"  nRMSE(w, all):   {metrics_dict['nrmse_w']:.6f}")
+        fmt = lambda x: f"{x:.6f}" if abs(x) < 1e6 else f"{x:.4g}"
+        print(f"  nRMSE(u, final): {fmt(nrmse)}")
+        print(f"  nRMSE(u, all):   {fmt(metrics_dict['nrmse_u'])}")
+        print(f"  nRMSE(v, all):   {fmt(metrics_dict['nrmse_v'])}")
+        print(f"  nRMSE(w, all):   {fmt(metrics_dict['nrmse_w'])}")
 
         if nrmse < best_nrmse:
             best_nrmse = nrmse
