@@ -1,1 +1,7 @@
-python-dotenv
+numpy>=2.0
+torch>=2.0
+google-genai>=1.0
+openai>=1.0
+anthropic>=0.30
+ollama>=0.4
+python-dotenv>=1.0
