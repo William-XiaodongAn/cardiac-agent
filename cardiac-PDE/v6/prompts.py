@@ -47,13 +47,13 @@ Output:
 """
 
 refine_prompt = """
-Given the nRMSE{nrmse} between the simulation results and the simulation codes {simulation_codes}, please refine the simulation to reduce the nRMSE.
+Refine the simulation code in {simulation_codes} to achieve a lower nRMSE than the current {nrmse} and maximize execution speed for the system described in {pde_desc}. Implement the most numerically accurate and computationally efficient integration and spatial discretization methods suitable for this specific system, optimizing GLSL performance and memory access patterns for peak efficiency. You must maintain the original application logic—specifically the CSV data loading, file downloading, and GUI infrastructure—entirely unchanged, focusing all improvements strictly on mathematical simulation quality and coding efficiency to ensure high-order precision and stability while preserving the existing structural integrity.
 
-Output only the raw code. No talk, no markdown, just code.
+Output only the raw html code. No talk, no markdown, just code.
 """
 
 debug_prompt = """
-The shader code {shader_codes} is producing errors or high RMSE in this context: {context_info}, with the following pdes {PDEs} and boundary conditions {bc}.
+The code {codes} is producing errors or high RMSE in this context: {context_info}, with the following pdes {PDEs} and boundary conditions {bc}.
 
 Output only the raw code. No talk, no markdown, just code.
 """

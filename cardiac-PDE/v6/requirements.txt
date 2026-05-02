@@ -1,0 +1,9 @@
+numpy
+requests
+h5py
+selenium
+ollama
+openai
+anthropic
+google-genai
+python-dotenv

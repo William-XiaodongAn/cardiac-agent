@@ -1,10 +1,10 @@
 {
-  "PDEs": "\\partial_t u(t, x) + \\partial_x (u(t,x)^2 / 2) = \\nu / \\pi \\partial_{xx} u(t,x)",
+  "PDEs": "\\frac{\\partial u}{\\partial t} + \\frac{\\partial (u^2/2)}{\\partial x} = \\frac{\\nu}{3.1415926} \\frac{\\partial^2 u}{\\partial x^2} \n",
   "number_of_state_variables": 1,
   "texture_size": 1024,
   "spatial_step": 0.0009765625,
   "domain_size": 1.0,
-  "temporal_step": 0.0001,
+  "temporal_step": 1e-05,
   "time_horizon": 2.0,
   "boundary_conditions": "Periodic",
   "parameter_values": {

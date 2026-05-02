@@ -310,60 +310,116 @@ def verify_agent(LLM,pde_name,simulation_file_path,IC_file_path,download_folder,
         print(f"Verification successful. Normalized RMSE: {normalized_rmse}")
         return normalized_rmse
 
-def debug_agent(LLM,pde_name,log_file_path,bugged_html_path,debugged_html_path):
+def debug_agent(LLM,pde_name,log_file_path,bugged_html_path,debugged_html_path,debug_type):
     
     LLM_original_name = LLM
     LLM = re.sub(r'[.\-:]', '_', LLM)
     
     with open(log_file_path, "r", encoding="utf-8") as f:
         logs = f.read()
-    with open(bugged_html_path, "r", encoding='utf-8') as f:
-        # find codes between
-        # <script id='march' type='shader'>#version 300 es
-        # </script>
-        html_content = f.read()
-        pattern = r"<script id='march' type='shader'>(.*?)</script>"
-        match = re.search(pattern, html_content, re.DOTALL)
-        march_shader_code = match.group(1).strip()
+    if debug_type == "shader":
+        with open(bugged_html_path, "r", encoding='utf-8') as f:
+            # find codes between
+            # <script id='march' type='shader'>#version 300 es
+            # </script>
+            html_content = f.read()
+            pattern = r"<script id='march' type='shader'>(.*?)</script>"
+            match = re.search(pattern, html_content, re.DOTALL)
+            bugged_code = match.group(1).strip()
     
-    if logs.startswith("nRMSE:"):
-        context = f"Current {logs}. The output is numerically inaccurate compared to the ground truth."
+        if logs.startswith("nRMSE:"):
+            context = f"Current {logs}. The output is numerically inaccurate compared to the ground truth."
+        else:
+            context = f"Execution Logs: {logs}"
+            
+        with open(f"./result/{LLM}/{pde_name}/parsed_resp.json", "r", encoding="utf-8") as f:
+            parsed_resp = json.load(f)      
+            
+        debug_prompt_text = debug_prompt.format(
+            codes = bugged_code,
+            context_info = context,
+            PDEs = parsed_resp["PDEs"],
+            bc= parsed_resp["boundary_conditions"]
+        )
+        
+    
+        response_text = chat_with(LLM_original_name, system_prompt, debug_prompt_text)
+        if response_text.startswith("```glsl"):
+            response_text = response_text[len("```glsl"):]
+        # deleat #version 300 es at beginning of response.text if exist
+        if response_text.startswith("#version 300 es"):
+            response_text = response_text[len("#version 300 es"):].lstrip()  # also remove leading whitespace
+
+        # #deleat ``` at end of response.text if exist
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        
+        # save to html
+        os.makedirs(os.path.dirname(debugged_html_path), exist_ok=True)
+        with open(f"./result/{LLM}/{pde_name}/skeleton.html", 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        updated_html = html_content.replace('{{MARCH_SHADER_CODE}}', response_text)
+        
+        
+        with open(debugged_html_path, 'w', encoding='utf-8') as f:
+            f.write(updated_html)
     else:
-        context = f"Execution Logs: {logs}"
+        with open(bugged_html_path, "r", encoding='utf-8') as f:
+            # find codes between
+            # <script id='march' type='shader'>#version 300 es
+            # </script>
+            bugged_code = f.read()
+    
+        if logs.startswith("nRMSE:"):
+            context = f"Current {logs}. The output is numerically inaccurate compared to the ground truth."
+        else:
+            context = f"Execution Logs: {logs}"
+            
+        with open(f"./result/{LLM}/{pde_name}/parsed_resp.json", "r", encoding="utf-8") as f:
+            parsed_resp = json.load(f)      
+            
+        debug_prompt_text = debug_prompt.format(
+            codes = bugged_code,
+            context_info = context,
+            PDEs = parsed_resp["PDEs"],
+            bc= parsed_resp["boundary_conditions"]
+        )
         
-    with open(f"./result/{LLM}/{pde_name}/parsed_resp.json", "r", encoding="utf-8") as f:
-        parsed_resp = json.load(f)      
+    
+        response_text = chat_with(LLM_original_name, system_prompt, debug_prompt_text)
+        # chooose between ```html and ``` if exist
+        html_pattern = r"```html(.*)```"
+        match = re.search(html_pattern, response_text, re.DOTALL)
+        if match:
+            response_text = match.group(1).strip()
         
-    debug_prompt_text = debug_prompt.format(
-        shader_codes = march_shader_code,
-        context_info = context,
-        PDEs = parsed_resp["PDEs"],
-        bc= parsed_resp["boundary_conditions"]
+        # save to html
+        os.makedirs(os.path.dirname(debugged_html_path), exist_ok=True)
+        
+        with open(debugged_html_path, 'w', encoding='utf-8') as f:
+            f.write(response_text)
+        
+def refine_agent(LLM,pde_name,simulation_file_path,nrmse,refined_simulation_file_path):
+    pde_desc = getattr(pde_descriptions, pde_name.replace('.','_'))
+    with open(simulation_file_path, 'r', encoding='utf-8') as f:
+        simulation_codes = f.read()
+        
+    refine_prompt_text = refine_prompt.format(
+        nrmse = nrmse,
+        simulation_codes = simulation_codes,
+        pde_desc = pde_desc
     )
     
-  
-    response_text = chat_with(LLM_original_name, system_prompt, debug_prompt_text)
-    if response_text.startswith("```glsl"):
-        response_text = response_text[len("```glsl"):]
-    # deleat #version 300 es at beginning of response.text if exist
-    if response_text.startswith("#version 300 es"):
-        response_text = response_text[len("#version 300 es"):].lstrip()  # also remove leading whitespace
+    response_text = chat_with(LLM, system_prompt, refine_prompt_text)
+    # find codes between ```html and ``` if exist
+    html_pattern = r"```html(.*)```"
+    match = re.search(html_pattern, response_text, re.DOTALL)
+    if match:
+        response_text = match.group(1).strip()
+    with open(refined_simulation_file_path, 'w', encoding='utf-8') as f:
+        f.write(response_text)
+    
 
-    # #deleat ``` at end of response.text if exist
-    if response_text.endswith("```"):
-        response_text = response_text[:-3]
-    
-    # save to html
-    os.makedirs(os.path.dirname(debugged_html_path), exist_ok=True)
-    with open(f"./result/{LLM}/{pde_name}/skeleton.html", 'r', encoding='utf-8') as f:
-        html_content = f.read()
-    updated_html = html_content.replace('{{MARCH_SHADER_CODE}}', response_text)
-    
-    
-    with open(debugged_html_path, 'w', encoding='utf-8') as f:
-        f.write(updated_html)
-        
-    
 def main():    
     parser = argparse.ArgumentParser()
     
@@ -384,12 +440,11 @@ def main():
         type=int,
         help="The number of debugging trials when the simulation fails. Default is 5."
     )
-    
     parser.add_argument(
-        "--scale_times",
+        "--refine_trail_times",
         default=5,
         type=int,
-        help = "scaling times to repeat"
+        help="The number of refining trials when the simulation fails. Default is 5."
     )
     
     args = parser.parse_args()
@@ -430,16 +485,14 @@ def main():
             
             download_folder = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}"
             log_file_path = f"{download_folder}/log.txt"
+            simulation_file_path = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}/simulation.html"
             normalized_rmse = verify_agent(args.LLM,args.pde,simulation_file_path,IC_file,download_folder,log_file_path,solution_file)
-            # save the normalized_rmse to a txt file
-            with open(f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}/normalized_rmse.txt", "w", encoding="utf-8") as f:
-                f.write(str(normalized_rmse))
             
             while normalized_rmse > 0.1 and debugged_times_used < args.debug_trail_times:
                 debugged_times_used += 1
                 bugged_file_path = debugged_file_path
                 debugged_file_path = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}/simulation.html"
-                debug_agent(args.LLM,args.pde,log_file_path,bugged_file_path,debugged_file_path)
+                debug_agent(args.LLM,args.pde,log_file_path,bugged_file_path,debugged_file_path,"shader")
                 
                 # Update download_folder and log_file_path for the new verification
                 download_folder = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}"
@@ -448,6 +501,30 @@ def main():
                 log_file_path = new_log_file_path  # Update for next debug iteration if needed
                 simulation_file_path = debugged_file_path  # Update simulation file path for next verification
             nrmse_list.append(normalized_rmse)
+        
+        # now we get working simulation with path= simulation_file_path.
+        # now refine the simulation
+        refined_times_used = 0
+        if nrmse_list[-1] <= 0.1: # only refine when the simulation is working but not accurate
+            while refined_times_used < args.refine_trail_times:
+                
+                refined_times_used += 1
+                refined_simulation_file_path = f"./result/{LLM_sanitized}/{args.pde}/{refined_times_used}_refine_times/simulation.html"
+                refine_agent(args.LLM,args.pde,simulation_file_path,nrmse_list[-1],refined_simulation_file_path)
+                
+                # verify the refined simulation
+                download_folder = f"./result/{LLM_sanitized}/{args.pde}/{refined_times_used}_refine_times"
+                log_file_path = f"{download_folder}/log.txt"
+                normalized_rmse = verify_agent(args.LLM,args.pde,refined_simulation_file_path,IC_file,download_folder,log_file_path,solution_file)
+                while normalized_rmse > 0.1 and debugged_times_used < args.debug_trail_times:
+                    debugged_times_used += 1
+                    bugged_file_path = refined_simulation_file_path
+                    debugged_file_path = refined_simulation_file_path
+                    debug_agent(args.LLM,args.pde,log_file_path,bugged_file_path,debugged_file_path,"html")
+                    normalized_rmse = verify_agent(args.LLM,args.pde,refined_simulation_file_path,IC_file,download_folder,log_file_path,solution_file)
+                    
+                simulation_file_path = refined_simulation_file_path
+        
         print(debugged_times_used, nrmse_list)
         
 if __name__ == "__main__":
