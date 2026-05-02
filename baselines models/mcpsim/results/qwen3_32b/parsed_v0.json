@@ -1,0 +1,58 @@
+{
+  "problem_type": "reaction_diffusion",
+  "pde_description": "Fenton-Karma three-variable (3V) cardiac electrophysiology model",
+  "dimension": 2,
+  "domain": {
+    "x_range": [
+      0,
+      10
+    ],
+    "y_range": [
+      0,
+      10
+    ]
+  },
+  "spatial_discretization": {
+    "N": [
+      512,
+      512
+    ],
+    "dx": 0.01953125
+  },
+  "temporal_discretization": {
+    "dt": 0.025,
+    "output_times": "t=0,10,...,100 (11 snapshots)"
+  },
+  "variables": [
+    "u",
+    "v",
+    "w"
+  ],
+  "time_dependent": true,
+  "nonlinear": true,
+  "coupled": true,
+  "boundary_conditions": {
+    "type": "Neumann no-flux",
+    "implementation": "symmetric ghost cell values"
+  },
+  "initial_conditions": "User-defined; default u(x,y,0)=0, v(x,y,0)=0, w(x,y,0)=0 unless specified otherwise",
+  "parameters": {
+    "D": 0.001,
+    "C_m": 1.0,
+    "\u03c4_pv": 7.99,
+    "\u03c4_v1": 9.8,
+    "\u03c4_v2": 312.5,
+    "\u03c4_pw": 870.0,
+    "\u03c4_mw": 41.0,
+    "\u03c4_0": 12.5,
+    "\u03c4_r": 33.83,
+    "\u03c4_si": 29.0,
+    "k": 10.0,
+    "V_csi": 0.861,
+    "V_c": 0.13,
+    "V_v": 0.04,
+    "\u03c4_d": 0.5714
+  },
+  "stability_notes": "dt=0.025 ensures CFL condition for explicit Laplacian (D\u00b7dt/dx\u00b2 \u2248 0.66 < 1). Piecewise conditions evaluated with exact threshold comparisons.",
+  "solver_function_signature": "(t, x, y, u, v, w, params) -> (du, dv, dw)"
+}

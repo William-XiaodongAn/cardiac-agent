@@ -1,0 +1,8 @@
+{
+  "llm_model": "qwen3:32b",
+  "tau_d": 0.5714,
+  "best_version": "v0",
+  "best_nrmse_u_final": 10000000000.0,
+  "total_attempts": 2,
+  "bug_free": false
+}

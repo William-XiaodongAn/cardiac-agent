@@ -1,0 +1,16 @@
+{
+  "raw_input": "Simulate the 2D Fenton-Karma three-variable (3V) cardiac electrophysiology model.\nThe system describes the evolution of normalized transmembrane potential u(t,x)\nand two gating variables v(t,x) and w(t,x) on a 2D spatial domain.\n\nThe PDE system is:\n  du/dt = D * laplacian(u) - (I_fi + I_so + I_si) / C_m\n  dv/dt = (1-v)/tau_mv  if u < V_c,  else  -v/tau_pv\n  dw/dt = (1-w)/tau_mw  if u < V_c,  else  -w/tau_pw\n\nIonic currents:\n  I_fi = -v * H(u - V_c) * (u - V_c) * (1 - u) / tau_d\n  I_so = u * (1 - H(u - V_c)) / tau_0 + H(u - V_c) / tau_r\n  I_si = -w * (1 + tanh(k * (u - V_csi))) / (2 * tau_si)\n\nwhere H is the Heaviside step function and\n  tau_mv(u) = (1 - H(u - V_v)) * tau_v1 + H(u - V_v) * tau_v2\n\nParameters: D=0.001, C_m=1.0, tau_pv=7.99, tau_v1=9.8, tau_v2=312.5,\ntau_pw=870.0, tau_mw=41.0, tau_0=12.5, tau_r=33.83, tau_si=29.0,\nk=10.0, V_csi=0.861, V_c=0.13, V_v=0.04, tau_d=0.5714\n\nSpatial domain: 512x512 grid. The ground truth uses dx = 10/N.\nTime horizon: T=100 with outputs every 10 time units.\nInternal time step: dt=0.025 for numerical stability.\nBoundary conditions: Neumann (no-flux).\n",
+  "iterations": [
+    {
+      "iteration": 0,
+      "exec_time_s": 6.6238532066345215,
+      "status": "success",
+      "nrmse_u": 2.249486435511405e-05,
+      "nrmse_v": 0.00011788304117707767,
+      "nrmse_w": 2.865804629858919e-06,
+      "nrmse_u_final": 4.879077348331542e-05,
+      "nrmse_avg": 4.774790338735022e-05
+    }
+  ],
+  "error_history": []
+}

@@ -3,3 +3,6 @@
 *.csv
 *.npy
 *.h5
+.venv/
+__pycache__/
+*.pyc

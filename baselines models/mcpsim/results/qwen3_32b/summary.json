@@ -1,0 +1,9 @@
+{
+  "llm_model": "qwen3:32b",
+  "tau_d": 0.5714,
+  "best_version": "v0",
+  "best_nrmse_u_final": 4.879077348331542e-05,
+  "total_iterations": 1,
+  "bug_free": true,
+  "method": "mcpsim"
+}
