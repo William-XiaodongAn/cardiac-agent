@@ -279,7 +279,7 @@ def verify_agent(LLM,pde_name,simulation_file_path,IC_file_path,download_folder,
         parsed_resp = json.load(f)
     T_end = parsed_resp["time_horizon"]
     
-    logs = verify_result(simulation_file_path, IC_file_path, T_end, download_folder)
+    logs = verify_result(LLM,simulation_file_path, IC_file_path, T_end, download_folder)
     # create the path
     os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
     if logs != "Success":
@@ -370,7 +370,7 @@ def main():
     parser.add_argument("--LLM", help="The name of LLM")
     parser.add_argument(
             "--pde", 
-            choices=["advection_beta0.1","advection_beta1.0", "burgers_nu0.001","burgers_nu1.0","twoD_reaction_diffusion","oneD_reaction_diffusion_Nu0.5_Rho1.0","fenton_karma"], 
+            choices=["advection_beta0.1","advection_beta1.0", "burgers_nu0.001","burgers_nu1.0","twoD_reaction_diffusion","oneD_reaction_diffusion_Nu0.5_Rho1.0","fenton_karma","TNNP"], 
             help="pde has to be one of advection, burgers, twoD_reaction_diffusion, or fenton_karma."
         )
     parser.add_argument(

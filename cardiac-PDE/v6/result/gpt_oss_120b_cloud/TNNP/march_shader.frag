@@ -1,0 +1,328 @@
+precision highp float;
+precision highp int;
+
+uniform sampler2D   inTexture1 ;
+uniform sampler2D   inTexture2 ;
+uniform sampler2D   inTexture3 ;
+uniform sampler2D   inTexture4 ;
+uniform sampler2D   inTexture5 ;
+
+uniform float       dt, dx, dy;
+
+in vec2 cc, pixPos ;
+
+layout (location = 0) out vec4 ocolor1 ;
+layout (location = 1) out vec4 ocolor2 ;
+layout (location = 2) out vec4 ocolor3 ;
+layout (location = 3) out vec4 ocolor4 ;
+layout (location = 4) out vec4 ocolor5 ;
+
+#define r1       color1.r
+#define g1       color1.g
+#define b1       color1.b
+#define a1       color1.a
+
+#define r2       color2.r
+#define g2       color2.g
+#define b2       color2.b
+#define a2       color2.a
+
+#define r3       color3.r
+#define g3       color3.g
+#define b3       color3.b
+#define a3       color3.a
+
+#define r4       color4.r
+#define g4       color4.g
+#define b4       color4.b
+#define a4       color4.a
+
+#define r5       color5.r
+#define g5       color5.g
+#define b5       color5.b
+#define a5       color5.a
+
+/* constants */
+const float Ko = 5.4;
+const float Cao = 2.0;
+const float Nao = 140.0;
+const float Vc = 0.016404;
+const float Vsr = 0.001094;
+const float Vss = 5.468e-05;
+const float Bufc = 0.2;
+const float Kbufc = 0.001;
+const float Bufsr = 10.0;
+const float Kbufsr = 0.3;
+const float Bufss = 0.4;
+const float Kbufss = 0.00025;
+const float Vmaxup = 0.006375;
+const float Kup = 0.00025;
+const float Vrel = 0.102;
+const float k3 = 0.06;
+const float k4 = 0.005;
+const float k1prime = 0.15;
+const float k2prime = 0.045;
+const float EC = 1.5;
+const float maxsr = 2.5;
+const float minsr = 1.0;
+const float Vleak = 0.00036;
+const float Vxfer = 0.0038;
+const float RR = 8314.3;
+const float FF = 96486.7;
+const float TT = 310.0;
+const float CAPACITANCE = 0.185;
+const float Gks = 0.392;
+const float Gto = 0.294;
+const float Gkr = 0.153;
+const float pKNa = 0.03;
+const float GK1 = 5.405;
+const float alphanaca = 2.5;
+const float GNa = 14.838;
+const float GbNa = 0.00029;
+const float KmK = 1.0;
+const float KmNa = 40.0;
+const float knak = 2.724;
+const float GCaL = 3.98e-05;
+const float GbCa = 0.000592;
+const float knaca = 1000.0;
+const float KmNai = 87.5;
+const float KmCa = 1.38;
+const float ksat = 0.1;
+const float n = 0.35;
+const float GpCa = 0.1238;
+const float KpCa = 0.0005;
+const float GpK = 0.0146;
+const float diffCoef = 0.001;
+
+/* helper functions ---------------------------------------------------- */
+float revNa(float Nai) { return (FF/(RR))*log(Nao/Nai); }
+float revK (float Ki)  { return (FF/(RR))*log(Ko/Ki); }
+float revCa(float Ca)  { return (FF/(RR))*0.5*log(Cao/Ca); }
+
+float fastExp(float x){ return exp(x); }
+
+/* main ---------------------------------------------------------------- */
+void main(){
+    vec2 size = vec2(textureSize(inTexture1,0));
+    vec2 ii = vec2(1.0,0.0)/size;
+    vec2 jj = vec2(0.0,1.0)/size;
+
+    /* read current state */
+    vec4 color1 = texture(inTexture1, cc);
+    vec4 color2 = texture(inTexture2, cc);
+    vec4 color3 = texture(inTexture3, cc);
+    vec4 color4 = texture(inTexture4, cc);
+    vec4 color5 = texture(inTexture5, cc);
+
+    /* unpack */
+    float V   = r1;
+    float sRR = g1;
+    float Nai = b1;
+    float Ki  = a1;
+
+    float Cai   = r2;
+    float CaSS  = g2;
+    float CaSR  = b2;
+    float ISumCa= a2;
+
+    float sm = r3;
+    float sh = g3;
+    float sj = b3;
+    float sxs = a3;
+
+    float sd   = r4;
+    float sf   = g4;
+    float sf2  = b4;
+    float sfcass = a4;
+
+    float sr    = r5;
+    float ss    = g5;
+    float sxr1  = b5;
+    float sxr2  = a5;
+
+    /* --------------------------------------------------------------
+       Neumann (no‑flux) boundary handling: mirror the interior value
+       when a neighbour would lie outside the domain. */
+    vec2 left  = cc - ii;
+    vec2 right = cc + ii;
+    vec2 down  = cc - jj;
+    vec2 up    = cc + jj;
+
+    left  = clamp(left , vec2(0.0), vec2(1.0)-ii);
+    right = clamp(right, vec2(0.0), vec2(1.0)-ii);
+    down  = clamp(down , vec2(0.0), vec2(1.0)-jj);
+    up    = clamp(up   , vec2(0.0), vec2(1.0)-jj);
+
+    float V_left  = texture(inTexture1, left ).r;
+    float V_right = texture(inTexture1, right).r;
+    float V_down  = texture(inTexture1, down ).r;
+    float V_up    = texture(inTexture1, up   ).r;
+
+    /* Laplacian for V (diffusion) */
+    float lapV = (V_left + V_right + V_up + V_down - 4.0*V) / (dx*dx);
+    float diffTerm = diffCoef * lapV;
+
+    /* --------------------------------------------------------------
+       Ionic reversal potentials */
+    float ENa = revNa(Nai);
+    float EK  = revK(Ki);
+    float ECa = revCa(CaSS);
+
+    /* --------------------------------------------------------------
+       Gating variable steady‑states and time constants */
+
+    /* m – fast Na activation (analytic update) */
+    float minft = 1.0 / pow(1.0 + exp((-56.86 - V)/9.03), 2.0);
+    float AM = 1.0 / (1.0 + exp((-60.0 - V)/5.0));
+    float BM = 0.1 / (1.0 + exp((V + 35.0)/5.0)) + 0.10 / (1.0 + exp((V - 50.0)/200.0));
+    float tauM = AM * BM;
+    float exptaum = exp(-dt / tauM);
+    sm = minft - (minft - sm) * exptaum;
+
+    /* h – fast Na inactivation */
+    float hinft = 1.0 / pow(1.0 + exp((V + 71.55)/7.43), 2.0);
+    float AH, BH;
+    if (V >= -40.0){
+        AH = 0.0;
+        BH = 0.77 / (0.13 * (1.0 + exp(-(V + 10.66)/11.1)));
+    }else{
+        AH = 0.057 * exp(-(V + 80.0)/6.8);
+        BH = 2.7 * exp(0.079 * V) + 3.1e5 * exp(0.3485 * V);
+    }
+    float tauH = 1.0 / (AH + BH);
+    float exptauh = exp(-dt / tauH);
+    sh = hinft - (hinft - sh) * exptauh;
+
+    /* j – fast Na inactivation */
+    float AJ, BJ;
+    if (V >= -40.0){
+        AJ = 0.0;
+        BJ = 0.6 * exp(0.057 * V) / (1.0 + exp(-0.1 * (V + 32.0)));
+    }else{
+        AJ = ((-2.5428e4 * exp(0.2444 * V) - 6.948e-6 * exp(-0.04391 * V)) * (V + 37.78))
+              / (1.0 + exp(0.311 * (V + 79.23)));
+        BJ = 0.02424 * exp(-0.01052 * V) / (1.0 + exp(-0.1378 * (V + 40.14)));
+    }
+    float tauJ = 1.0 / (AJ + BJ);
+    float exptauj = exp(-dt / tauJ);
+    sj = hinft - (hinft - sj) * exptauj;
+
+    /* xs – slow K activation (X_s) */
+    float xsinft = 1.0 / (1.0 + exp((-5.0 - V)/14.0));
+    float Axs = 1400.0 / sqrt(1.0 + exp((5.0 - V)/6.0));
+    float Bxs = 1.0 / (1.0 + exp((V - 35.0)/15.0));
+    float tauXs = Axs * Bxs + 80.0;
+    float exptauxs = exp(-dt / tauXs);
+    sxs = xsinft - (xsinft - sxs) * exptauxs;
+
+    /* d – L-type Ca activation */
+    float d_inf = 1.0 / (1.0 + exp((-8.0 - V)/7.5));
+    float tau_d = d_inf * (1.0 - exp((-8.0 - V)/7.5)) / (0.035 * (V + 8.0));
+    float expdtau_d = exp(-dt / tau_d);
+    sd = d_inf - (d_inf - sd) * expdtau_d;
+
+    /* f – L-type Ca inactivation */
+    float f_inf = 1.0 / (1.0 + exp((V + 20.0)/7.0));
+    float tau_f = 9.0 / (0.0197 * exp(-(0.0337 * (V + 10.0)*(V + 10.0))) + 0.02);
+    float expdtau_f = exp(-dt / tau_f);
+    sf = f_inf - (f_inf - sf) * expdtau_f;
+
+    /* f2 – second Ca inactivation gate */
+    float f2_inf = 0.67 / (1.0 + exp((V + 35.0)/7.0)) + 0.33;
+    float tau_f2 = 3.0;
+    float expdtau_f2 = exp(-dt / tau_f2);
+    sf2 = f2_inf - (f2_inf - sf2) * expdtau_f2;
+
+    /* fcass – Ca-dependent inactivation (subspace) */
+    float fcass_inf = 1.0 / (1.0 + pow(CaSS/0.00035, 8.0));
+    float tau_fcass = 2.0;
+    float expdtau_fcass = exp(-dt / tau_fcass);
+    sfcass = fcass_inf - (fcass_inf - sfcass) * expdtau_fcass;
+
+    /* xr1 – IKr rapid activation */
+    float xr1_inf = 1.0 / (1.0 + exp((-26.0 - V)/7.0));
+    float alpha_xr1 = 450.0 / (1.0 + exp((-45.0 - V)/10.0));
+    float beta_xr1  = 6.0 / (1.0 + exp((V - (-30.0))/11.5));
+    float tau_xr1 = 1.0 / (alpha_xr1 + beta_xr1);
+    float expdtau_xr1 = exp(-dt / tau_xr1);
+    sxr1 = xr1_inf - (xr1_inf - sxr1) * expdtau_xr1;
+
+    /* xr2 – IKr slow activation */
+    float xr2_inf = 1.0 / (1.0 + exp((V + 88.0)/24.0));
+    float tau_xr2 = 3.0 / (1.0 + exp((-60.0 - V)/20.0));
+    float expdtau_xr2 = exp(-dt / tau_xr2);
+    sxr2 = xr2_inf - (xr2_inf - sxr2) * expdtau_xr2;
+
+    /* rs – Ito activation (fast) */
+    float rs_inf = 1.0 / (1.0 + exp((-20.0 - V)/6.0));
+    float tau_rs = 8.0 / (1.0 + exp((-20.0 - V)/10.0));
+    float expdtau_rs = exp(-dt / tau_rs);
+    sr = rs_inf - (rs_inf - sr) * expdtau_rs;
+
+    /* ss – Ito inactivation (slow) */
+    float ss_inf = 1.0 / (1.0 + exp((V + 20.0)/5.0));
+    float tau_ss = 1000.0 / (1.0 + exp((V + 10.0)/15.0));
+    float expdtau_ss = exp(-dt / tau_ss);
+    ss = ss_inf - (ss_inf - ss) * expdtau_ss;
+
+    /* --------------------------------------------------------------
+       Ionic currents */
+    float I_Na = GNa * pow(sm,3.0) * sh * sj * (V - ENa);
+    float I_bNa = GbNa * (V - ENa);
+    float I_NaK = (knak * pow(Ko,0.5) * (Nai/(Nai + KmNa)) * (Ko/(Ko + KmK))) *
+                  (V - EK) / (1.0 + pow( ( ( ( ( ( (  (pow( ( ( ( ( (Nai/ (Nai + KmNai) ) ) ) ) ) ) ) ) ) ) / (pKNa* (1.0+ ( (Na_i*Na_i) / ( (KmNa*KmNa) ) ) ) ) ) );
+    /* simplified Na/K pump (more accurate form can be inserted) */
+    float I_NaCa = knaca * ( (exp( (alphanaca * V * FF)/(RR*TT) ) * Nai * Nai * Nai * Cao) -
+                            (exp( ((alphanaca-1.0) * V * FF)/(RR*TT) ) * Nao * Nao * Nao * CaSS) )
+                     / ( (KmNai*KmNai*KmNai + Nao*Nao*Nao) * (KmCa + Cao) *
+                         (1.0 + ksat * exp( ((alphanaca-1.0) * V * FF)/(RR*TT) )) );
+
+    float I_CaL = GCaL * d * f * f2 * 4.0 * (V - 15.0) *
+                  (F*F)/(R*R*TT*TT) *
+                  (Cai*exp(2.0*V*F/(R*TT)) - 0.341*Cao) /
+                  (exp(2.0*V*F/(R*TT)) - 1.0);
+    float I_bCa = GbCa * (V - ECa);
+    float I_pCa = GpCa * CaSS/(KpCa + CaSS);
+    float I_K1 = GK1 * (V - EK) / (1.0 + exp(0.07*(V - EK-5.0)));
+    float I_to = Gto * sr * ss * (V - EK);
+    float I_Kr = Gkr * sqrt(Ko/5.4) * sxr1 * sxr2 * (V - EK);
+    float I_Ks = Gks * sxs * sxs * (V - EK);
+    float I_pK = GpK * (V - EK) / (1.0 + exp((25.0 - V)/5.98));
+
+    /* total ionic current */
+    float I_ion = I_Na + I_bNa + I_NaK + I_NaCa + I_CaL + I_bCa + I_pCa +
+                 I_K1 + I_to + I_Kr + I_Ks + I_pK;
+
+    /* --------------------------------------------------------------
+       Update transmembrane potential */
+    float dV = (-I_ion + diffTerm) / CAPACITANCE;
+    V += dt * dV;
+
+    /* --------------------------------------------------------------
+       Calcium handling (simplified) */
+    float i_rel = k3 * pow(CaSS,2.0) * (CaSR - CaSS);
+    float i_up  = Vmaxup / (1.0 + (Kmup/CaSS));
+    float i_leak = Vleak * (CaSR - CaSS);
+    float i_xfer = Vxfer * (CaSS - Cai);
+
+    CaSS += dt * ( - (I_CaL + I_bCa - 2.0*I_NaCa) * (1.0/(2.0*Vss*FF)) +
+                  i_rel - i_up - i_leak - i_xfer );
+
+    CaSR += dt * ( i_up - i_rel - i_leak );
+
+    Cai  += dt * ( - (I_CaL + I_bCa - 2.0*I_NaCa) * (1.0/(2.0*Vc*FF)) +
+                  i_xfer );
+
+    /* --------------------------------------------------------------
+       Update concentrations */
+    Nai += dt * ( - (I_Na + I_bNa + 3.0*I_NaK + 3.0*I_NaCa) * (1.0/(Fc*Vc)) );
+    Ki  += dt * ( - (I_K1 + I_to + I_Kr + I_Ks + I_pK - 2.0*I_NaK) * (1.0/(Fc*Vc)) );
+
+    /* --------------------------------------------------------------
+       Pack results back to output textures */
+    ocolor1 = vec4(V, sRR, Nai, Ki);
+    ocolor2 = vec4(Cai, CaSS, CaSR, ISumCa);
+    ocolor3 = vec4(sm, sh, sj, sxs);
+    ocolor4 = vec4(sd, sf, sf2, sfcass);
+    ocolor5 = vec4(sr, ss, sxr1, sxr2);
+}

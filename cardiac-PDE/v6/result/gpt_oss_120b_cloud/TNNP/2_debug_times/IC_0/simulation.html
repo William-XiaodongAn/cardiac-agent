@@ -1,0 +1,656 @@
+<!doctype html>
+<html>
+    <head>
+        <script src='https://abubujs.org/libs/Abubu.latest.js'
+            type='text/javascript'></script>
+        <script src='https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.min.js'></script>
+            </head>
+
+            <body>
+            <canvas id=canvas_1 width=512 height=512 style="border: 1px solid black">
+            Your browser doesn't support HTML5.0
+            </canvas>
+            <canvas id=canvas_2 width=512 height=256 style="border: 1px solid black">
+            Your browser doesn't support HTML5.0
+            </canvas>
+
+<script id='click' type='x-shader-fragment'>#version 300 es
+precision highp float ;
+precision highp int ;
+
+uniform sampler2D   inTexture ;
+uniform vec2    clickPosition ;
+uniform float   clickRadius ;
+
+in vec2 cc, pixPos ;
+
+layout (location = 0) out vec4 ocolor ;
+
+#define u   color.r
+#define v   color.g
+#define w   color.b
+
+// Main body of the shader
+void main() {
+    vec2  size  = vec2(textureSize(inTexture, 0)) ;
+
+    // read the color of the pixel .......................................
+    vec4 color = texture( inTexture , cc ) ;
+
+    if ( length(clickPosition - cc )< clickRadius ){
+        u = 1. ;
+    }
+
+    // output the color of the pixel .....................................
+    ocolor = color ;
+    return ;
+}
+
+</script><script id='init' type='shader'>#version 300 es
+precision highp float ;
+precision highp int ;
+
+in vec2 cc, pixPos ;
+
+layout (location = 0) out vec4 color1 ;
+layout (location = 1) out vec4 color2 ;
+layout (location = 2) out vec4 color3 ;
+layout (location = 3) out vec4 color4 ;
+layout (location = 4) out vec4 color5 ;
+// Main body of the shader
+void main() {
+    vec4 color = vec4(0.) ;
+    
+    color.r = 0. ;
+	color.g = 0. ;
+	color.b = 0. ;
+
+	color1 = color ;
+    color2 = color ;
+    color3 = color ;
+    color4 = color ;
+    color5 = color ;
+    return ;
+}
+</script>
+
+<script id='march' type='shader'>#version 300 es
+precision highp float;
+precision highp int;
+
+uniform sampler2D inTexture1;
+uniform sampler2D inTexture2;
+uniform sampler2D inTexture3;
+uniform sampler2D inTexture4;
+uniform sampler2D inTexture5;
+
+uniform float dt, dx, dy;
+
+in vec2 cc, pixPos;
+
+layout(location = 0) out vec4 ocolor1;
+layout(location = 1) out vec4 ocolor2;
+layout(location = 2) out vec4 ocolor3;
+layout(location = 3) out vec4 ocolor4;
+layout(location = 4) out vec4 ocolor5;
+
+/* --- constants ------------------------------------------------------- */
+const float Ko   = 5.4;
+const float Cao  = 2.0;
+const float Nao  = 140.0;
+const float Vc   = 0.016404;
+const float Vsr  = 0.001094;
+const float Vss  = 5.468e-05;
+const float Bufc = 0.2;
+const float Kbufc = 0.001;
+const float Bufsr = 10.0;
+const float Kbufsr = 0.3;
+const float Bufss = 0.4;
+const float Kbufss = 0.00025;
+const float Vmaxup = 0.006375;
+const float Kup   = 0.00025;
+const float Vrel  = 0.102;
+const float k3    = 0.06;
+const float k4    = 0.005;
+const float k1prime = 0.15;
+const float k2prime = 0.045;
+const float EC    = 1.5;
+const float maxsr = 2.5;
+const float minsr = 1.0;
+const float Vleak = 0.00036;
+const float Vxfer = 0.0038;
+const float RR    = 8314.3;
+const float FF    = 96486.7;
+const float TT    = 310.0;
+const float CAPACITANCE = 0.185;
+const float Gks   = 0.392;
+const float Gto   = 0.294;
+const float Gkr   = 0.153;
+const float pKNa  = 0.03;
+const float GK1   = 5.405;
+const float alphanaca = 2.5;
+const float GNa   = 14.838;
+const float GbNa  = 0.00029;
+const float KmK   = 1.0;
+const float KmNa  = 40.0;
+const float knak  = 2.724;
+const float GCaL  = 3.98e-05;
+const float GbCa  = 0.000592;
+const float knaca  = 1000.0;
+const float KmNai = 87.5;
+const float KmCa  = 1.38;
+const float ksat  = 0.1;
+const float n     = 0.35;
+const float GpCa  = 0.1238;
+const float KpCa  = 0.0005;
+const float GpK   = 0.0146;
+const float diffCoef = 0.001;
+const float Fc = 1.0;               // surface‑to‑volume ratio (placeholder)
+
+/* --- helper ---------------------------------------------------------- */
+float revNa(float Nai) { return (FF/RR) * log(Nao/Nai); }
+float revK (float Ki)  { return (FF/RR) * log(Ko/Ki); }
+float revCa(float Ca)  { return (FF/RR) * 0.5 * log(Cao/Ca); }
+
+/* -------------------------------------------------------------------- */
+void main()
+{
+    vec2 size = vec2(textureSize(inTexture1, 0));
+    vec2 ii = vec2(1.0, 0.0) / size;
+    vec2 jj = vec2(0.0, 1.0) / size;
+
+    /* read state ----------------------------------------------------- */
+    vec4 c1 = texture(inTexture1, cc);
+    vec4 c2 = texture(inTexture2, cc);
+    vec4 c3 = texture(inTexture3, cc);
+    vec4 c4 = texture(inTexture4, cc);
+    vec4 c5 = texture(inTexture5, cc);
+
+    float V   = c1.r;
+    float sRR = c1.g;
+    float Nai = c1.b;
+    float Ki  = c1.a;
+
+    float Cai   = c2.r;
+    float CaSS  = c2.g;
+    float CaSR  = c2.b;
+    float ISumCa= c2.a;
+
+    float sm = c3.r;
+    float sh = c3.g;
+    float sj = c3.b;
+    float sxs = c3.a;
+
+    float sd   = c4.r;
+    float sf   = c4.g;
+    float sf2  = c4.b;
+    float sfcass = c4.a;
+
+    float sr = c5.r;
+    float ss = c5.g;
+    float sxr1 = c5.b;
+    float sxr2 = c5.a;
+
+    /* Neumann boundary (mirror) -------------------------------------- */
+    vec2 left  = clamp(cc - ii, vec2(0.0), vec2(1.0) - ii);
+    vec2 right = clamp(cc + ii, vec2(0.0), vec2(1.0) - ii);
+    vec2 down  = clamp(cc - jj, vec2(0.0), vec2(1.0) - jj);
+    vec2 up    = clamp(cc + jj, vec2(0.0), vec2(1.0) - jj);
+
+    float Vl = texture(inTexture1, left ).r;
+    float Vr = texture(inTexture1, right).r;
+    float Vd = texture(inTexture1, down ).r;
+    float Vu = texture(inTexture1, up   ).r;
+
+    float lapV = (Vl + Vr + Vu + Vd - 4.0*V) / (dx*dx);
+    float diffTerm = diffCoef * lapV;
+
+    /* reversal potentials -------------------------------------------- */
+    float ENa = revNa(Nai);
+    float EK  = revK(Ki);
+    float ECa = revCa(CaSS);
+
+    /* ---- gating variables ------------------------------------------ */
+
+    /* m – fast Na activation (analytic) */
+    float minft = 1.0 / pow(1.0 + exp((-56.86 - V)/9.03), 2.0);
+    float AM = 1.0 / (1.0 + exp((-60.0 - V)/5.0));
+    float BM = 0.1 / (1.0 + exp((V + 35.0)/5.0)) + 0.10 / (1.0 + exp((V - 50.0)/200.0));
+    float tauM = AM * BM;
+    float exptaum = exp(-dt / tauM);
+    sm = minft - (minft - sm) * exptaum;
+
+    /* h – fast Na inactivation */
+    float hinft = 1.0 / pow(1.0 + exp((V + 71.55)/7.43), 2.0);
+    float AH, BH;
+    if (V >= -40.0) {
+        AH = 0.0;
+        BH = 0.77 / (0.13 * (1.0 + exp(-(V + 10.66)/11.1)));
+    } else {
+        AH = 0.057 * exp(-(V + 80.0)/6.8);
+        BH = 2.7 * exp(0.079 * V) + 3.1e5 * exp(0.3485 * V);
+    }
+    float tauH = 1.0 / (AH + BH);
+    float exptauh = exp(-dt / tauH);
+    sh = hinft - (hinft - sh) * exptauh;
+
+    /* j – fast Na inactivation */
+    float AJ, BJ;
+    if (V >= -40.0) {
+        AJ = 0.0;
+        BJ = 0.6 * exp(0.057 * V) / (1.0 + exp(-0.1 * (V + 32.0)));
+    } else {
+        AJ = ((-2.5428e4 * exp(0.2444 * V) - 6.948e-6 * exp(-0.04391 * V)) * (V + 37.78))
+              / (1.0 + exp(0.311 * (V + 79.23));
+        BJ = 0.02424 * exp(-0.01052 * V) / (1.0 + exp(-0.1378 * (V + 40.14)));
+    }
+    float tauJ = 1.0 / (AJ + BJ);
+    float exptauj = exp(-dt / tauJ);
+    sj = hinft - (hinft - sj) * exptauj;
+
+    /* xs – slow K activation */
+    float xsinft = 1.0 / (1.0 + exp((-5.0 - V)/14.0));
+    float Axs = 1400.0 / sqrt(1.0 + exp((5.0 - V)/6.0));
+    float Bxs = 1.0 / (1.0 + exp((V - 35.0)/15.0));
+    float tauXs = Axs * Bxs + 80.0;
+    float exptauxs = exp(-dt / tauXs);
+    sxs = xsinft - (xsinft - sxs) * exptauxs;
+
+    /* d – L‑type Ca activation */
+    float d_inf = 1.0 / (1.0 + exp((-8.0 - V)/7.5));
+    float tau_d = d_inf * (1.0 - exp((-8.0 - V)/7.5)) / (0.035 * (V + 8.0));
+    float expdtau_d = exp(-dt / tau_d);
+    sd = d_inf - (d_inf - sd) * expdtau_d;
+
+    /* f – L‑type Ca inactivation */
+    float f_inf = 1.0 / (1.0 + exp((V + 20.0)/7.0));
+    float tau_f = 9.0 / (0.0197 * exp(-0.0337 * pow(V + 10.0, 2.0)) + 0.02);
+    float expdtau_f = exp(-dt / tau_f);
+    sf = f_inf - (f_inf - sf) * expdtau_f;
+
+    /* f2 – second Ca inactivation */
+    float f2_inf = 0.67 / (1.0 + exp((V + 35.0)/7.0)) + 0.33;
+    float tau_f2 = 3.0;
+    float expdtau_f2 = exp(-dt / tau_f2);
+    sf2 = f2_inf - (f2_inf - sf2) * expdtau_f2;
+
+    /* fcass – Ca‑dependent inactivation (subspace) */
+    float fcass_inf = 1.0 / (1.0 + pow(CaSS/0.00035, 8.0));
+    float tau_fcass = 2.0;
+    float expdtau_fcass = exp(-dt / tau_fcass);
+    sfcass = fcass_inf - (fcass_inf - sfcass) * expdtau_fcass;
+
+    /* xr1 – IKr rapid activation */
+    float xr1_inf = 1.0 / (1.0 + exp((-26.0 - V)/7.0));
+    float alpha_xr1 = 450.0 / (1.0 + exp((-45.0 - V)/10.0));
+    float beta_xr1  = 6.0 / (1.0 + exp((V + 30.0)/11.5));
+    float tau_xr1 = 1.0 / (alpha_xr1 + beta_xr1);
+    float expdtau_xr1 = exp(-dt / tau_xr1);
+    sxr1 = xr1_inf - (xr1_inf - sxr1) * expdtau_xr1;
+
+    /* xr2 – IKr slow activation */
+    float xr2_inf = 1.0 / (1.0 + exp((V + 88.0)/24.0));
+    float tau_xr2 = 3.0 / (1.0 + exp((-60.0 - V)/20.0));
+    float expdtau_xr2 = exp(-dt / tau_xr2);
+    sxr2 = xr2_inf - (xr2_inf - sxr2) * expdtau_xr2;
+
+    /* rs – Ito activation (fast) */
+    float rs_inf = 1.0 / (1.0 + exp((-20.0 - V)/6.0));
+    float tau_rs = 8.0 / (1.0 + exp((-20.0 - V)/10.0));
+    float expdtau_rs = exp(-dt / tau_rs);
+    sr = rs_inf - (rs_inf - sr) * expdtau_rs;
+
+    /* ss – Ito inactivation (slow) */
+    float ss_inf = 1.0 / (1.0 + exp((V + 20.0)/5.0));
+    float tau_ss = 1000.0 / (1.0 + exp((V + 10.0)/15.0));
+    float expdtau_ss = exp(-dt / tau_ss);
+    ss = ss_inf - (ss_inf - ss) * expdtau_ss;
+
+    /* --------------------------------------------------------------- */
+    /* ionic currents */
+    float I_Na  = GNa * pow(sm,3.0) * sh * sj * (V - ENa);
+    float I_bNa = GbNa * (V - ENa);
+    float I_NaK = knak * sqrt(Ko) * (Nai/(Nai + KmNa)) * (Ko/(Ko + KmK)) * (V - EK);
+    float I_NaCa = knaca *
+                  ( exp(alphanaca * V * FF/(RR*TT)) * pow(Nai,3.0) * Cao
+                  - exp((alphanaca-1.0) * V * FF/(RR*TT)) * pow(Nao,3.0) * CaSS )
+                  / ( (pow(KmNai,3.0) + pow(Nao,3.0)) * (KmCa + Cao) *
+                      (1.0 + ksat * exp((alphanaca-1.0) * V * FF/(RR*TT))) );
+
+    float I_CaL = GCaL * sd * sf * sf2 * 4.0 * (V - 15.0) *
+                  (FF*FF)/(RR*RR*TT*TT) *
+                  (Cai*exp(2.0*V*FF/(RR*TT)) - 0.341*Cao) /
+                  (exp(2.0*V*FF/(RR*TT)) - 1.0);
+    float I_bCa = GbCa * (V - ECa);
+    float I_pCa = GpCa * CaSS/(KpCa + CaSS);
+    float I_K1  = GK1 * (V - EK) / (1.0 + exp(0.07*(V - EK - 5.0)));
+    float I_to  = Gto * sr * ss * (V - EK);
+    float I_Kr  = Gkr * sqrt(Ko/5.4) * sxr1 * sxr2 * (V - EK);
+    float I_Ks  = Gks * sxs * sxs * (V - EK);
+    float I_pK  = GpK * (V - EK) / (1.0 + exp((25.0 - V)/5.98));
+
+    float I_ion = I_Na + I_bNa + I_NaK + I_NaCa + I_CaL + I_bCa + I_pCa
+               + I_K1 + I_to + I_Kr + I_Ks + I_pK;
+
+    /* --------------------------------------------------------------- */
+    /* update transmembrane potential */
+    float dV = (-I_ion + diffTerm) / CAPACITANCE;
+    V += dt * dV;
+
+    /* --------------------------------------------------------------- */
+    /* calcium handling (simplified) */
+    float i_rel  = k3 * pow(CaSS,2.0) * (CaSR - CaSS);
+    float i_up   = Vmaxup / (1.0 + (Kup / CaSS));
+    float i_leak = Vleak * (CaSR - CaSS);
+    float i_xfer = Vxfer * (CaSS - Cai);
+
+    CaSS += dt * ( - (I_CaL + I_bCa - 2.0*I_NaCa) * (1.0/(2.0*Vss*FF))
+                  + i_rel - i_up - i_leak - i_xfer );
+
+    CaSR += dt * ( i_up - i_rel - i_leak );
+
+    Cai  += dt * ( - (I_CaL + I_bCa - 2.0*I_NaCa) * (1.0/(2.0*Vc*FF))
+                  + i_xfer );
+
+    /* --------------------------------------------------------------- */
+    /* update concentrations */
+    Nai += dt * ( - (I_Na + I_bNa + 3.0*I_NaK + 3.0*I_NaCa) / Vc );
+    Ki  += dt * ( - (I_K1 + I_to + I_Kr + I_Ks + I_pK - 2.0*I_NaK) / Vc );
+
+    /* --------------------------------------------------------------- */
+    /* pack results */
+    ocolor1 = vec4(V, sRR, Nai, Ki);
+    ocolor2 = vec4(Cai, CaSS, CaSR, ISumCa);
+    ocolor3 = vec4(sm, sh, sj, sxs);
+    ocolor4 = vec4(sd, sf, sf2, sfcass);
+    ocolor5 = vec4(sr, ss, sxr1, sxr2);
+}
+</script>
+
+<script>
+function source(id){
+    return document.getElementById(id).text ;
+}
+
+var canvas_1 = document.getElementById('canvas_1') ;
+canvas_1.style.left = "10px";
+canvas_1.style.top = "10px";
+canvas_1.style.position = "absolute";
+
+var canvas_2 = document.getElementById('canvas_2') ;
+canvas_2.style.left = "532px";
+canvas_2.style.top = "10px";
+canvas_2.style.position = "absolute";
+
+
+// dont change anything here ............................................
+var env = {
+        dt : 0.025 ,
+        time : 0 ,
+        dx : 0.0234375,
+        running : false ,
+		width : 512,
+		height : 512,
+		clickRadius : 0.06 ,
+		clickPosition  : [0.,0.] ,
+		skip : 40,
+  } ;
+// ---------------------------------------------------------------
+
+
+// defining the textures .................................................
+env.fcolor0 = new Abubu.Float32Texture(env.width,env.height) ;
+env.scolor0 = new Abubu.Float32Texture(env.width,env.height) ;
+env.fcolor0.pairable = true ;
+env.scolor0.pairable = true ;
+
+env.fcolor1 = new Abubu.Float32Texture(env.width,env.height) ;
+env.scolor1 = new Abubu.Float32Texture(env.width,env.height) ;
+env.fcolor1.pairable = true ;
+env.scolor1.pairable = true ;
+
+env.fcolor2 = new Abubu.Float32Texture(env.width,env.height) ;
+env.scolor2 = new Abubu.Float32Texture(env.width,env.height) ;
+env.fcolor2.pairable = true ;
+env.scolor2.pairable = true ;
+
+env.fcolor3 = new Abubu.Float32Texture(env.width,env.height) ;
+env.scolor3 = new Abubu.Float32Texture(env.width,env.height) ;
+env.fcolor3.pairable = true ;
+env.scolor3.pairable = true ;
+
+env.fcolor4 = new Abubu.Float32Texture(env.width,env.height) ;
+env.scolor4 = new Abubu.Float32Texture(env.width,env.height) ;
+env.fcolor4.pairable = true ;
+env.scolor4.pairable = true ;
+
+var texture_num = 5;
+
+env.fcolors = [] ;
+env.scolors = [] ;
+for(var i=0; i<texture_num; i++){
+    env['fcolor'+i] = new Abubu.Float32Texture( 
+            env.width, env.height, { pairable : true } ) ;
+    env['scolor'+i] = new Abubu.Float32Texture( 
+            env.width, env.height, { pairable : true } ) ;
+    env.fcolors.push(env['fcolor'+i]) ;
+    env.scolors.push(env['scolor'+i]) ;
+}
+
+// Setup a solver ........................................................
+var init = new Abubu.Solver( {
+    fragmentShader  : source('init'),
+    targets : {
+        color1 : { location :0, target : env.fcolor0  } ,
+        color2 : { location :1, target : env.fcolor1  } ,
+        color3 : { location :2, target : env.fcolor2  } ,
+        color4 : { location :3, target : env.fcolor3  } ,
+        color5 : { location :4, target : env.fcolor4  } ,
+    }
+} ) ;
+init.render();
+
+// post processing .......................................................
+var plot = new Abubu.Plot2D({
+    target : env.fcolor0,
+    prevTarget: env.scolor0,
+    channel : 'r',
+    minValue : -1.0 ,
+    maxValue : 1.0 ,
+    colorbar : true ,
+    probeVisible : true ,
+    canvas : canvas_1 ,
+}) ;
+plot.init() ;
+plot.render() ;
+
+function marchUniforms(_inTexture1,_inTexture2,_inTexture3,_inTexture4,_inTexture5){
+    this.inTexture1         = { type : 't', value : _inTexture1          } ;
+    this.inTexture2         = { type : 't', value : _inTexture2          } ;
+    this.inTexture3         = { type : 't', value : _inTexture3          } ;
+    this.inTexture4         = { type : 't', value : _inTexture4          } ;
+    this.inTexture5         = { type : 't', value : _inTexture5          } ;
+    this.dt                 = { type : 'f', value : env.dt              } ;
+	this.dx                 = { type : 'f', value : env.dx          } ;
+	this.dy                 = { type : 'f', value : env.dx          } ;
+    return this ;
+}
+
+var fmarch = new Abubu.Solver({
+        fragmentShader : source( 'march' ) ,
+		uniforms : new marchUniforms( env.fcolor0,env.fcolor1,env.fcolor2,env.fcolor3,env.fcolor4 ) ,
+        targets : { 
+            ocolor1 : { location : 0, target : env.scolor0 },
+            ocolor2 : { location : 1, target : env.scolor1 },
+            ocolor3 : { location : 2, target : env.scolor2 },
+            ocolor4 : { location : 3, target : env.scolor3 },
+            ocolor5 : { location : 4, target : env.scolor4 },
+        
+        }
+    } ) ;
+
+var smarch = new Abubu.Solver({
+        fragmentShader : source( 'march' ) ,
+  		uniforms : new marchUniforms( env.scolor0,env.scolor1,env.scolor2,env.scolor3,env.scolor4 ) ,
+        targets : { 
+            ocolor1 : { location : 0, target : env.fcolor0 },
+            ocolor2 : { location : 1, target : env.fcolor1 },
+            ocolor3 : { location : 2, target : env.fcolor2 },
+            ocolor4 : { location : 3, target : env.fcolor3 },
+            ocolor5 : { location : 4, target : env.fcolor4 },
+        
+        }
+    } ) ;
+
+function march(){
+    fmarch.render() ;
+    env.time += env.dt ;
+    smarch.render() ;
+    env.time += env.dt ;
+}
+
+env.csvFileName = 'result.csv' ;
+env.saveCsvFile = function() {
+    data = env.fcolor0.value.toString() ;
+
+    // 3. CRITICAL: Pass the array directly to the Blob. 
+    // This avoids creating one giant mega-string in memory.
+    const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    const name_download = 'result.csv';
+
+    link.href = url;
+    link.download = name_download;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url); // Cleanup
+};
+
+
+
+//IC
+const IC_url = './random_sample_t0.csv';
+const T_end = 2;
+//IC
+
+function loadCsv(url) {
+    // fetch starts the request and "promises" to get back to you
+    fetch(url)
+        .then(response => response.text()) // Convert the raw response to text
+        .then(csvText => {
+            // This code runs ONLY after the file is fully loaded
+            processCsvData(csvText); 
+        })
+        .catch(error => console.error("Error:", error));
+}
+
+function processCsvData(result) {
+    var data = result.split(',');
+    var width = parseInt(data[0]);
+    var height = parseInt(data[1]);
+
+    var tabs = [];
+    for (var i = 0; i < texture_num; i++) {
+        tabs.push(new Float32Array(width * height * 4));
+    }
+
+    var p = 2;
+    var indx;
+
+    for (var j = 0; j < texture_num; j++) {
+        for (var i = 0; i < (width * height); i++) {
+            indx = i * 4;
+            tabs[j][indx]     = parseFloat(data[p++]);
+            tabs[j][indx + 1] = parseFloat(data[p++]);
+            tabs[j][indx + 2] = parseFloat(data[p++]);
+            tabs[j][indx + 3] = parseFloat(data[p++]);
+        }
+    }
+
+    for (var j = 0; j < texture_num; j++) {
+        env.fcolors[j].data = tabs[j];
+        env.scolors[j].data = tabs[j];
+    }
+}
+
+loadCsv(IC_url) ;
+
+function run(){
+    if (env.running){
+        for(var i = 0 ; i<env.skip ; i++){
+
+            if (env.time >= T_end){
+                env.running = false ;
+                console.log("Simulation finished!")
+                env.saveCsvFile();
+                break ;
+            }
+            march() ;
+        }
+
+    }
+    plot.render() ;
+    requestAnimationFrame(run) ;
+}
+
+// click solver ..........................................................
+var click = new Abubu.Solver({
+    fragmentShader : source( 'click' ) ,
+    uniforms : {
+        inTexture : { type : 't', value : env.fcolor0 } ,
+        clickRadius: { type : 'f', value : env.clickRadius } ,
+        clickPosition: { type : 'v2', value : env.clickPosition } ,
+    } ,
+    targets : { ocolor : { location : 0 , target : env.scolor0 } }
+} ) ;
+
+var clickCopy = new Abubu.Copy( env.scolor0, env.fcolor0 ) ;
+
+new Abubu.MouseListener({
+    canvas : canvas_1 ,
+    event : 'drag' ,
+    callback : function(e){
+        click.uniforms.clickPosition.value = e.position ;
+        click.render() ;
+        clickCopy.render() ;
+    }
+} ) ;
+
+
+env.initialize = function(){
+    env.time = 0 ;
+    init.render() ;
+    plot.init() ;
+}
+
+env.solve = function(){
+    env.running = !env.running ;
+    return ;
+}
+
+function createGui(){
+    gui = new dat.GUI({width:300}) ;
+    
+    var mod = gui.addFolder('Model param') ;
+
+    var exe = gui.addFolder('Execution') ;
+    exe.add(env,'time').name('Time').listen() ;
+    exe.add(env,'skip').name('Skip Steps') ;
+    exe.add(env,'dt').name('Delta t') ;
+    exe.add(env,'initialize').name('Initialize') ;
+    exe.add(env,'solve').name('Solve/Pause') ;
+    exe.open() ;
+}
+
+createGui() ;
+run() ;
+
+</script>
+</body>
+</html>

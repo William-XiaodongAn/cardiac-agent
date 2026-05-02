@@ -1,0 +1,198 @@
+%=====================================================================
+% Shader Name Cheat-Sheet
+%
+% Programmer	:	ABOUZAR KABOUDIAN
+% Date			:	2016-08-03
+% Place			: 	Gergia Institute of Technology
+%=====================================================================
+\documentclass[tikz, border=10pt]{standalone}
+
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{wasysym}
+\usepackage{textcomp}
+
+\usetikzlibrary{shapes.callouts}
+\tikzset{
+  level/.style   = { ultra thick, blue },
+  connect/.style = { thick},
+  notice/.style  = { draw, rectangle callout, callout relative pointer={#1} },
+  label/.style   = { text width=2cm }
+}
+
+
+\newcounter{rowNo}
+\newcounter{colNo}
+\newcommand{\x}{7.*\arabic{colNo}}
+\newcommand{\y}{-2.5*\arabic{rowNo}}
+\newcommand{\newRow}{\stepcounter{rowNo}}
+
+% Shader name and corresponding channels
+% \shader{texture name}
+%	{r-channel}
+%	{g-channel}
+%	{b-channel}
+%	{a-channel}
+\newcommand{\newColumn}{\setcounter{rowNo}{0}\stepcounter{colNo}}
+
+\newcommand{\shader}[5]{
+	\newRow
+	\node[label] at (\x,\y)  {\texttt{#1}} ;
+	\draw[connect,color=red] (\x,\y) -- (\x+1,\y+1);
+	\draw[connect,color=green] (\x,\y) -- (\x+1,\y+0.5);
+	\draw[connect,color=blue] (\x,\y) -- (\x+1,\y);
+	\draw[connect,color=yellow] (\x,\y) -- (\x+1,\y-.5);
+	\node[label] at (\x+2.1,\y+1)  {$#2$} ;
+	\node[label] at (\x+2.1,\y+0.5)  {$#3$} ;
+	\node[label] at (\x+2.1,\y)  {$#4$} ;
+	\node[label] at (\x+2.1,\y-.5)  {$#5$} ;	
+}
+
+
+\renewcommand{\checked}[1]{
+	\if#11
+			{$\checkmark$}
+	\else
+		\if#12
+			{$\checkmark\checkmark$}
+		\else
+			{\ }	
+		\fi
+	\fi
+}
+
+\newcommand{\finished}[1]{
+	\if#11
+		{$\dag$}
+	\else
+		\if#12
+			{$\ddag$}
+		\else
+			{\ }	
+		\fi
+	\fi
+}
+\newcommand{\dble}[1]{
+	\if#11
+	{$-$}
+	\else 
+	\if#12
+	{$+$}
+	\else
+	{\ }	
+	\fi
+	\fi
+}
+\newcommand{\pppp}[1]{
+	\if#11
+		\textopenbullet
+	\else 
+		\if#12 
+			\textbullet
+		\else
+			\if#13
+				$\checkmark$
+			\else	
+				-
+			\fi
+		\fi
+	\fi	
+}
+
+\newcommand{\xcchShift}{4.5}
+\newcommand{\finishedChannel}[4]{
+	\node[label] at (\x+\xcchShift,\y+1)  {\finished{#1}};
+	\node[label] at (\x+\xcchShift,\y+0.5)  {\finished{#2}} ;
+	\node[label] at (\x+\xcchShift,\y)  {\finished{#3}} ;
+	\node[label] at (\x+\xcchShift,\y-.5)  {\finished{#4}} ;
+}
+
+\newcommand{\xchShift}{4.8}
+\newcommand{\checkedChannel}[4]{
+	\node[label] at (\x+\xchShift,\y+1)  {\checked{#1}};
+	\node[label] at (\x+\xchShift,\y+0.5)  {\checked{#2}} ;
+	\node[label] at (\x+\xchShift,\y)  {\checked{#3}} ;
+	\node[label] at (\x+\xchShift,\y-.5)  {\checked{#4}} ;
+}
+
+\newcommand{\xdchShift}{5.1}
+\newcommand{\dCheckChannel}[4]{
+	\node[label] at (\x+\xdchShift,\y+1)  {\dble{#1}};
+	\node[label] at (\x+\xdchShift,\y+0.5)  {\dble{#2}} ;
+	\node[label] at (\x+\xdchShift,\y)  {\dble{#3}} ;
+	\node[label] at (\x+\xdchShift,\y-.5)  {\dble{#4}} ;
+}
+\newcommand{\finishedShader}[2]{
+	\node[label] at (\x,\y-0.4) {\pppp{#1}\pppp{#2}} ;	
+}
+\newcommand{\finishedTextures}[2]{
+	\node[label] at (\x,\y+0.4) {\pppp{#1}\pppp{#2}} ;	
+}
+
+\newcommand{\txt}[1]{\mbox{\scriptsize #1}}
+\newcommand{\utxt}[1]{_{\txt{#1}}}
+\newcommand{\ion}[1]{[\mbox{#1}]}
+%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+% Document begins
+%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+\begin{document}
+	
+%=====================================================================
+% Tikz picture environment
+%=====================================================================
+\begin{tikzpicture}				    
+%---------------------------------------------------------------------
+% First Column
+%---------------------------------------------------------------------
+	\shader{mhjx}
+		{m}
+		{h}
+		{j}
+		{x\utxt{s}}
+	\finishedChannel{2}{2}{2}{2}
+	\checkedChannel{0}{0}{0}{0}
+
+	
+	\shader{dfff}
+		{d}
+		{f}
+		{f\utxt{2}}
+		{f\utxt{Cass}}
+	\finishedChannel{2}{2}{2}{2}
+	\checkedChannel{0}{0}{0}{0}
+	
+	\shader{rsxr}
+	{r}
+	{s}
+	{x\utxt{r1}}
+	{x\utxt{r2}}
+	\finishedChannel{2}{2}{2}{2}
+	\checkedChannel{0}{0}{0}{0}	
+	
+%---------------------------------------------------------------------
+% Second  Column
+%---------------------------------------------------------------------
+	\newColumn
+	
+
+	
+\shader{cssr}
+{\ion{Ca}\utxt{tot}}
+{\ion{Ca}\utxt{ss}}
+{\ion{Ca}\utxt{sr}}
+{I_{\Sigma\txt{CaNa}}}
+\finishedChannel{1}{1}{1}{1}
+\checkedChannel{0}{0}{0}{0}		
+	\shader{vrnk}
+		{V}
+		{R}	
+		{\ion{Na}\utxt{i}}
+		{\ion{K}\utxt{i}}
+	\finishedChannel{2}{1}{1}{1}
+	\checkedChannel{0}{0}{0}{0}
+		
+
+		
+
+\end{tikzpicture}
+\end{document}

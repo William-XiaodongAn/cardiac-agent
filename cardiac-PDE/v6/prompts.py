@@ -26,8 +26,7 @@ Output only the JSON. No talk, no markdown.
 7. "time_horizon": Float (the total simulation time, e.g., 100.0).
 8. "boundary_conditions": String or Object describing the conditions.
 9. "parameter_values": Object mapping each parameter to its initial value.
-10. "notes": String (optional, use null if empty).
-
+10. "notes": String (optional, use null if no Important implementation notes)
 ### Example Output Format:
 {{
   "PDEs": "\\frac{{\\partial u}}{{\\partial t}} = D \\nabla^2 u \n",

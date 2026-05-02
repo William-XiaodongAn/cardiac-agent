@@ -12,7 +12,7 @@ import threading
 import shutil
 from pathlib import Path
 
-def load_IC(simulation_file_path: str, IC_file_path: str, T_end: float = 100.0) -> None:
+def load_IC(LLM,simulation_file_path: str, IC_file_path: str, T_end: float = 100.0) -> None:
     """
     Load Initial condition file to simulation file
 
@@ -22,7 +22,7 @@ def load_IC(simulation_file_path: str, IC_file_path: str, T_end: float = 100.0) 
         T_end (float): The end time value. Defaults to 100.0.
     """
     # first, copy simulation file to the same folder as IC file.
-    destination = os.path.join(os.path.dirname(IC_file_path), 'simulation.html')
+    destination = os.path.join(os.path.dirname(IC_file_path), f'simulation_{LLM}.html')
     shutil.copy2(simulation_file_path, destination)
     
     simulation_file_path = destination
@@ -55,16 +55,16 @@ def load_IC(simulation_file_path: str, IC_file_path: str, T_end: float = 100.0) 
         f.write(new_content)
     return simulation_file_path
 
-def verify_result(simulation_file_path: str, IC_file_path: str, T_end: float,download_folder:str) -> None:
+def verify_result(LLM,simulation_file_path: str, IC_file_path: str, T_end: float,download_folder:str) -> None:
 
-    simulation_file_path = load_IC(simulation_file_path,IC_file_path,T_end)
+    simulation_file_path = load_IC(LLM,simulation_file_path,IC_file_path,T_end)
     
-    # Get the directory where simulation.html is located
+    # Get the directory where simulation_{LLM}.html is located
     simulation_directory = os.path.dirname(simulation_file_path)
     
     PORT = 8001
     TARGET_MESSAGE = "Simulation finished!"
-    URL = f"http://localhost:{PORT}/simulation.html"
+    URL = f"http://localhost:{PORT}/simulation_{LLM}.html"
     
     download_path = Path(download_folder).resolve()
     download_path.mkdir(parents=True, exist_ok=True)
