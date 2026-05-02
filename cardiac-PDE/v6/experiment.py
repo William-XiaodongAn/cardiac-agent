@@ -6,7 +6,7 @@ import glob
 import shutil
 import json
 
-LLMs = ["gemma4:26b", "gemini-2.5-flash", "gpt-oss:20b"]
+LLMs = ["gemma3:27b", "gemini-2.5-flash", "gpt-oss:20b","gemma3:12b"]
 PDEs = ["advection_beta0.1","advection_beta1.0", "burgers_nu0.001","burgers_nu1.0","fenton_karma"]
 def main():    
     parser = argparse.ArgumentParser()

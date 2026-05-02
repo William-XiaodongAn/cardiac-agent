@@ -57,8 +57,6 @@ def transform_1D_to_2D(data_1D, xcoor):
 
 def main():
     for filename in links.keys():
-        if filename != 'ReacDiff_Nu0.5_Rho1.0.hdf5':
-            continue
             
         url = links[filename]
         pde_name = pde_names[filename]
