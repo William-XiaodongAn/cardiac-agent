@@ -10,51 +10,66 @@ layout (location = 0) out vec4 ocolor ;
 
 #define u       color.r
     const float nu = 0.001;
-// your codes here for helper function
-float f_u(float val_u) {
-    return val_u * val_u / 2.0;
+
+// Helper function to get texture value with periodic boundary conditions
+vec4 samplePeriodic(vec2 coord) {
+    return texture(inTexture, fract(coord));
 }
-// your codes here for helper function
 
 // Main body of the shader
 void main() {
-    vec2  size  = vec2(textureSize(inTexture, 0)) ;
+    // dx is already provided by the uniform, so we don't need to derive it from size
+    // For 1D PDE on a 2D texture, we assume the x-dimension is the relevant one, and y is constant (or 0)
+    // We'll use texture coordinates [0,1] for x.
 
-    vec2 ii = vec2(1.,0.)/size ;
-    // vec2 jj = vec2(0.,1.)/size ; // Not used for 1D PDE
+    // read the color of the pixel at current position
+    vec4 color = texture(inTexture, cc);
 
-    // read the color of the pixel
-    vec4 color = texture( inTexture , cc ) ;
+    // Get values from neighboring pixels using periodic boundary conditions
+    vec2  size  = vec2(textureSize(inTexture, 0)) ; // To calculate pixel offset
+    vec2 ii = vec2(1.,0.)/size ; // Offset for one pixel in x-direction
 
-    // use fract for periodic condition
-    vec2 prevX_coord = fract(cc - ii);
-    vec2 nextX_coord = fract(cc + ii);
-    // your codes here (do not define helper function)
-    float u_c = u; // u at current pixel (i)
+    vec4 prevX_color = samplePeriodic(cc - ii);
+    vec4 nextX_color = samplePeriodic(cc + ii);
+    vec4 prev2X_color = samplePeriodic(cc - 2.0 * ii);
+    vec4 next2X_color = samplePeriodic(cc + 2.0 * ii);
 
-    // Read neighboring values
-    vec4 color_prevX = texture( inTexture , prevX_coord ) ;
-    float u_pX = color_prevX.r; // u at previous pixel (i-1)
+    float u_prevX = prevX_color.r;
+    float u_nextX = nextX_color.r;
+    float u_prev2X = prev2X_color.r;
+    float u_next2X = next2X_color.r;
+    float u_curr = u;
 
-    vec4 color_nextX = texture( inTexture , nextX_coord ) ;
-    float u_nX = color_nextX.r; // u at next pixel (i+1)
+    // Convection term: ∂(u^2/2)/∂x
+    // Using a 5-point WENO (or similar high-order upwind) scheme for convection, or simpler scheme for first pass.
+    // For simplicity and common practice in shaders, let's start with a central difference for the flux derivative.
+    // F(u) = u^2/2
+    // ∂F/∂x ≈ (F(u_nextX) - F(u_prevX)) / (2 * dx)
+    // Or for stability, an upwind scheme for the non-linear flux.
+    // Let's use a simple first-order upwind for the non-linear term.
+    // If u > 0, use backward difference (u_curr - u_prevX)/dx
+    // If u < 0, use forward difference (u_nextX - u_curr)/dx
+    // This is for ∂u/∂x. For ∂(u^2/2)/∂x, we need to consider the sign of u.
+    // A more robust approach for Burgers: F(u) = u^2/2. Use Lax-Friedrichs type flux or Godunov.
+    // For a basic implementation, a central difference for the flux F(u) = u^2/2:
+    // float F_nextX = 0.5 * u_nextX * u_nextX;
+    // float F_prevX = 0.5 * u_prevX * u_prevX;
+    // float dF_dx = (F_nextX - F_prevX) / (2.0 * dx);
 
-    // Calculate the advection term: -d(u^2/2)/dx
-    // Using central difference for d(f(u))/dx
-    float df_dx = (f_u(u_nX) - f_u(u_pX)) / (2.0 * dx);
+    // Let's use a 3-point central difference for the flux derivative:
+    float dF_dx = (0.5 * u_nextX * u_nextX - 0.5 * u_prevX * u_prevX) / (2.0 * dx);
 
-    // Calculate the diffusion term: (nu/pi) * d^2u/dx^2
-    // Using central difference for d^2u/dx^2
-    const float PI_INV = 1.0 / 3.1415926; // Precompute 1/pi
-    float d2u_dx2 = (u_nX - 2.0 * u_c + u_pX) / (dx * dx);
-    float diffusion_term = (nu * PI_INV) * d2u_dx2;
-    // your codes here (do not define helper function)
+    // Diffusion term: (nu/PI) * ∂^2 u / ∂x^2
+    // Using a 3-point central difference for the second derivative:
+    // ∂^2 u / ∂x^2 ≈ (u_nextX - 2*u_curr + u_prevX) / dx^2
+    float d2u_dx2 = (u_nextX - 2.0 * u_curr + u_prevX) / (dx * dx);
 
-    // Update u using explicit Euler time integration
-    float u_new = u_c + dt * (-df_dx + diffusion_term);
+    // Calculate the right-hand side of the PDE
+    float dudt = -dF_dx + (nu / 3.1415926) * d2u_dx2;
 
-    // Assign the new value to the output color's red channel
-    // Keep green and blue channels as they were, assuming they are not used for u
-    ocolor = vec4(u_new, color.g, color.b, color.a) ;
+    // Explicit Euler time integration
+    float new_u = u_curr + dt * dudt;
+
+    ocolor = vec4(new_u, color.g, color.b, color.a); // Update only the 'u' component
     return ;
 }

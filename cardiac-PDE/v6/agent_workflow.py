@@ -259,10 +259,11 @@ def code_agent(LLM:str,pde_name:str):
         march_shader_code = f.read()
         
     updated_html = html_content.replace('{{MARCH_SHADER_CODE}}', march_shader_code)
+    simulation_file_path = f'./result/{LLM}/{pde_name}/0_debug_times/simulation.html'
+    os.makedirs(os.path.dirname(simulation_file_path), exist_ok=True)
 
-    with open(f'./result/{LLM}/{pde_name}/simulation.html', 'w', encoding='utf-8') as f:
+    with open(simulation_file_path, 'w', encoding='utf-8') as f:
         f.write(updated_html)
-    simulation_file_path = f'./result/{LLM}/{pde_name}/simulation.html'
     print(f"Simulation code saved to {simulation_file_path}")
     return simulation_file_path
 
@@ -416,6 +417,9 @@ def refine_agent(LLM,pde_name,simulation_file_path,nrmse,refined_simulation_file
     match = re.search(html_pattern, response_text, re.DOTALL)
     if match:
         response_text = match.group(1).strip()
+    # create refined_simulation_file_path
+    os.makedirs(os.path.dirname(refined_simulation_file_path), exist_ok=True)
+    
     with open(refined_simulation_file_path, 'w', encoding='utf-8') as f:
         f.write(response_text)
     
@@ -442,7 +446,7 @@ def main():
     )
     parser.add_argument(
         "--refine_trail_times",
-        default=5,
+        default=0,
         type=int,
         help="The number of refining trials when the simulation fails. Default is 5."
     )
@@ -485,13 +489,13 @@ def main():
             
             download_folder = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}"
             log_file_path = f"{download_folder}/log.txt"
-            simulation_file_path = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}/simulation.html"
+            simulation_file_path = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/simulation.html"
             normalized_rmse = verify_agent(args.LLM,args.pde,simulation_file_path,IC_file,download_folder,log_file_path,solution_file)
             
             while normalized_rmse > 0.1 and debugged_times_used < args.debug_trail_times:
                 debugged_times_used += 1
                 bugged_file_path = debugged_file_path
-                debugged_file_path = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/IC_{index}/simulation.html"
+                debugged_file_path = f"./result/{LLM_sanitized}/{args.pde}/{debugged_times_used}_debug_times/simulation.html"
                 debug_agent(args.LLM,args.pde,log_file_path,bugged_file_path,debugged_file_path,"shader")
                 
                 # Update download_folder and log_file_path for the new verification

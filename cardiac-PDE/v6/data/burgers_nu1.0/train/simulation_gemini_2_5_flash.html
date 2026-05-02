@@ -36,7 +36,7 @@ void main() {
     vec4 color = texture( inTexture , cc ) ;
 
     if ( length(clickPosition - cc )< clickRadius ){
-        u = 1. ;
+        color.r = 1. ; // Set 'u' (red channel) to 1.0 within the click radius
     }
 
     // output the color of the pixel .....................................
@@ -69,46 +69,88 @@ void main() {
 }
 </script>
 
-<script id='march' type='shader'>#version 300 es
+<!-- New shader to compute the Right-Hand Side (L(u)) of the PDE -->
+<script id='compute_L' type='shader'>#version 300 es
 precision highp float ;
 precision highp int ;
 
 uniform sampler2D   inTexture ;
-uniform float       dt, dx, dy;
+uniform float       dx ;
 
 in vec2 cc, pixPos ;
 
 layout (location = 0) out vec4 ocolor ;
 
 #define u       color.r
-    const float nu = 0.001;
+const float nu = 1.0;
+const float PI = 3.1415926;
 
-// Main body of the shader
 void main() {
     vec2  size  = vec2(textureSize(inTexture, 0)) ;
-
     vec2 ii = vec2(1.,0.)/size ;
-    vec2 jj = vec2(0.,1.)/size ;
 
-    // read the color of the pixel
     vec4 color = texture( inTexture , cc ) ;
+    float u_i = u;
 
-    float u_prevX = texture(inTexture, fract(cc - ii)).r;
-    float u_nextX = texture(inTexture, fract(cc + ii)).r;
+    vec4 color_prev = texture(inTexture, fract(cc - ii));
+    float u_prev = color_prev.r;
 
-    float F_prevX = u_prevX * u_prevX * 0.5;
-    float F_nextX = u_nextX * u_nextX * 0.5;
+    vec4 color_next = texture(inTexture, fract(cc + ii));
+    float u_next = color_next.r;
 
-    float advection_term = - (F_nextX - F_prevX) / (2.0 * dx);
+    // Calculate the advection term: ∂_x (u^2 / 2)
+    float F_u_i = 0.5 * u_i * u_i;
+    float F_u_prev = 0.5 * u_prev * u_prev;
+    float F_u_next = 0.5 * u_next * u_next;
 
-    const float INV_PI = 1.0 / 3.1415926;
-    float diffusion_term = (nu * INV_PI) * (u_nextX - 2.0 * u + u_prevX) / (dx * dx);
+    // First-order upwind scheme for advection term.
+    // More stable for shocks, but introduces numerical diffusion.
+    // This is generally preferred for Burgers' equation to avoid oscillations at shocks.
+    float advection_term;
+    if (u_i >= 0.0) { // If characteristic speed u_i is positive, information comes from the left
+        advection_term = (F_u_i - F_u_prev) / dx; // Backward difference for ∂_x F
+    } else {          // If characteristic speed u_i is negative, information comes from the right
+        advection_term = (F_u_next - F_u_i) / dx; // Forward difference for ∂_x F
+    }
 
-    float u_new = u + dt * (advection_term + diffusion_term);
+    // Calculate the diffusion term: ν / π * ∂_{xx} u
+    // Using central difference for ∂_{xx} (second-order accurate)
+    float diffusion_factor = nu / PI;
+    float laplacian_u = (u_next - 2.0 * u_i + u_prev) / (dx * dx);
+    float diffusion_term = diffusion_factor * laplacian_u;
 
-    color.r = u_new;
+    // Compute L(u) = - ∂_x F(u) + D ∂_{xx} u
+    float L_u = - advection_term + diffusion_term;
 
-    ocolor = color ;
+    ocolor = vec4(L_u, 0., 0., 0.); // Store L(u) in the red channel
+    return ;
+}
+</script>
+
+<!-- New shader to perform the update step for Runge-Kutta -->
+<script id='update_u' type='shader'>#version 300 es
+precision highp float ;
+precision highp int ;
+
+uniform sampler2D   uOldTexture ; // Stores u_n (or u_star in some RK stages)
+uniform sampler2D   kTexture ;    // Stores k1 or k2 (the computed L(u) values)
+uniform float       dt_factor ;   // dt/2 or dt
+
+in vec2 cc, pixPos ;
+
+layout (location = 0) out vec4 ocolor ;
+
+void main() {
+    vec4 u_old_color = texture( uOldTexture , cc ) ;
+    vec4 k_color = texture( kTexture , cc ) ;
+
+    float u_old = u_old_color.r ;
+    float k_val = k_color.r ;
+
+    // Compute u_new = u_old + dt_factor * k_val
+    float u_new = u_old + dt_factor * k_val ;
+
+    ocolor = vec4(u_new, u_old_color.gba); // Update red channel, preserve others
     return ;
 }
 </script>
@@ -131,12 +173,15 @@ canvas_2.style.position = "absolute";
 
 // dont change anything here ............................................
 var env = {
-        dt : 1e-05 ,
+        // MODIFIED: Reduced dt for improved stability and accuracy.
+        // The original dt = 2.5e-06 was close to the RK2 diffusion stability limit (approx 3.0e-6).
+        // A more conservative dt like 1.0e-06 ensures better stability and reduces temporal error.
+        dt : 1.0e-06 , 
         time : 0 ,
-        dx : 0.0009765625,
+        dx : 0.0009765625, // 1/1024
         running : false ,
 		width : 1024,
-		height : 1024,
+		height : 1024, // Keep height at 1024 for compatibility with Abubu.js 2D texture, 1D effectively along x
 		clickRadius : 0.06 ,
 		clickPosition  : [0.,0.] ,
 		skip : 40,
@@ -162,7 +207,12 @@ for(var i=0; i<1; i++){
     env.scolors.push(env['scolor'+i]) ;
 }
 
-// Setup a solver ........................................................
+// Additional temporary textures for RK2 intermediate steps (k1, k2)
+env.k1_tex = new Abubu.Float32Texture(env.width, env.height, { pairable: true });
+env.k2_tex = new Abubu.Float32Texture(env.width, env.height, { pairable: true });
+
+
+// Setup a solver for initialization .....................................
 var init = new Abubu.Solver( {
     fragmentShader  : source('init'),
     targets : {
@@ -186,31 +236,72 @@ var plot = new Abubu.Plot2D({
 plot.init() ;
 plot.render() ;
 
-function marchUniforms(_inTexture){
-    this.inTexture          = { type : 't', value : _inTexture          } ;
-    this.dt                 = { type : 'f', value : env.dt              } ;
-	this.dx                 = { type : 'f', value : env.dx          } ;
-	this.dy                 = { type : 'f', value : env.dx          } ;
-    return this ;
-}
+// RK2 Solvers:
+// 1. Solver to compute k1 = L(u_n) from 'compute_L' shader, outputting to k1_tex
+var compute_L_solver_k1 = new Abubu.Solver({
+    fragmentShader: source('compute_L'),
+    uniforms: {
+        inTexture: { type: 't', value: env.fcolor0 }, // Input will be u_n
+        dx: { type: 'f', value: env.dx }
+    },
+    targets: { ocolor: { location: 0, target: env.k1_tex } } // Output to k1_tex
+});
 
-var fmarch = new Abubu.Solver({
-        fragmentShader : source( 'march' ) ,
-		uniforms : new marchUniforms( env.fcolor0 ) ,
-        targets : { ocolor : { location : 0, target : env.scolor0 } }
-    } ) ;
+// 2. Solver to compute k2 = L(u_star) from 'compute_L' shader, outputting to k2_tex
+var compute_L_solver_k2 = new Abubu.Solver({
+    fragmentShader: source('compute_L'),
+    uniforms: {
+        inTexture: { type: 't', value: env.scolor0 }, // Input will be u_star (set dynamically in march)
+        dx: { type: 'f', value: env.dx }
+    },
+    targets: { ocolor: { location: 0, target: env.k2_tex } } // Output to k2_tex
+});
 
-var smarch = new Abubu.Solver({
-        fragmentShader : source( 'march' ) ,
-  		uniforms : new marchUniforms( env.scolor0 ) ,
-        targets : { ocolor : { location : 0, target : env.fcolor0 } }
-    } ) ;
+// 3. Solver to update u (for u_star and u_n_plus_1) from 'update_u' shader
+// This solver's targets will be changed dynamically in the march function
+var update_u_solver = new Abubu.Solver({
+    fragmentShader: source('update_u'),
+    uniforms: {
+        uOldTexture: { type: 't', value: env.fcolor0 }, // Placeholder, will be set in march
+        kTexture: { type: 't', value: env.k1_tex },    // Placeholder, will be set in march
+        dt_factor: { type: 'f', value: env.dt / 2.0 }  // Placeholder, will be set in march
+    },
+    // Set a default target; it will be overwritten dynamically in march.
+    targets : { ocolor : { location : 0, target : env.scolor0 } }
+});
 
+
+// Main Runge-Kutta 2nd Order (Midpoint Method) march function
 function march(){
-    fmarch.render() ;
-    env.time += env.dt ;
-    smarch.render() ;
-    env.time += env.dt ;
+    // Stage 1: Compute k1 = L(u_n)
+    // Input: u_n (env.fcolor0), Output: k1 (env.k1_tex)
+    compute_L_solver_k1.uniforms.inTexture.value = env.fcolor0; // Ensure it reads from current u
+    compute_L_solver_k1.render();
+
+    // Stage 2: Compute u_star = u_n + (dt/2) * k1
+    // Input: u_n (env.fcolor0), k1 (env.k1_tex), dt_factor = dt/2.0
+    // Output: u_star (env.scolor0)
+    update_u_solver.uniforms.uOldTexture.value = env.fcolor0;
+    update_u_solver.uniforms.kTexture.value = env.k1_tex;
+    update_u_solver.uniforms.dt_factor.value = env.dt / 2.0;
+    update_u_solver.targets = { ocolor: { location: 0, target: env.scolor0 } }; // Dynamically set target
+    update_u_solver.render();
+
+    // Stage 3: Compute k2 = L(u_star)
+    // Input: u_star (env.scolor0), Output: k2 (env.k2_tex)
+    compute_L_solver_k2.uniforms.inTexture.value = env.scolor0; // Use u_star as input
+    compute_L_solver_k2.render();
+
+    // Stage 4: Compute u_n_plus_1 = u_n + dt * k2
+    // Input: u_n (env.fcolor0 - original state), k2 (env.k2_tex), dt_factor = dt
+    // Output: u_n_plus_1 (env.fcolor0)
+    update_u_solver.uniforms.uOldTexture.value = env.fcolor0; // Use original u_n
+    update_u_solver.uniforms.kTexture.value = env.k2_tex;
+    update_u_solver.uniforms.dt_factor.value = env.dt;
+    update_u_solver.targets = { ocolor: { location: 0, target: env.fcolor0 } }; // Dynamically set target
+    update_u_solver.render();
+
+    env.time += env.dt; // Advance simulation time by a full dt step
 }
 
 env.csvFileName = 'result.csv' ;
@@ -239,8 +330,8 @@ env.saveCsvFile = function() {
 
 
 //IC
-const IC_url = './random_sample_t0.csv';
-const T_end = 2;
+const IC_url = 'IC_1.csv';
+const T_end = 2.0;
 //IC
 
 function loadCsv(url) {
@@ -279,7 +370,7 @@ function processCsvData(result) {
 
     for (var j = 0; j < texture_num; j++) {
         env.fcolors[j].data = tabs[j];
-        env.scolors[j].data = tabs[j];
+        env.scolors[j].data = tabs[j]; // Initialize both textures with IC
     }
 }
 
@@ -295,7 +386,7 @@ function run(){
                 env.saveCsvFile();
                 break ;
             }
-            march() ;
+            march() ; // Each march() call now advances time by env.dt
         }
 
     }
@@ -307,22 +398,23 @@ function run(){
 var click = new Abubu.Solver({
     fragmentShader : source( 'click' ) ,
     uniforms : {
-        inTexture : { type : 't', value : env.fcolor0 } ,
+        inTexture : { type : 't', value : env.fcolor0 } , // Reads from fcolor0
         clickRadius: { type : 'f', value : env.clickRadius } ,
         clickPosition: { type : 'v2', value : env.clickPosition } ,
     } ,
-    targets : { ocolor : { location : 0 , target : env.scolor0 } }
+    targets : { ocolor : { location : 0 , target : env.scolor0 } } // Writes to scolor0
 } ) ;
 
-var clickCopy = new Abubu.Copy( env.scolor0, env.fcolor0 ) ;
+var clickCopy = new Abubu.Copy( env.scolor0, env.fcolor0 ) ; // Copies scolor0 to fcolor0
 
 new Abubu.MouseListener({
     canvas : canvas_1 ,
     event : 'drag' ,
     callback : function(e){
         click.uniforms.clickPosition.value = e.position ;
-        click.render() ;
-        clickCopy.render() ;
+        click.uniforms.inTexture.value = env.fcolor0; // Ensure click reads the latest state
+        click.render() ; // Apply click to scolor0
+        clickCopy.render() ; // Copy the result to fcolor0
     }
 } ) ;
 
@@ -357,4 +449,4 @@ run() ;
 
 </script>
 </body>
-</html>     
+</html>

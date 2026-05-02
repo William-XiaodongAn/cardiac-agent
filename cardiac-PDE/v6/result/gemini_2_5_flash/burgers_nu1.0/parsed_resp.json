@@ -4,11 +4,11 @@
   "texture_size": 1024,
   "spatial_step": 0.0009765625,
   "domain_size": 1.0,
-  "temporal_step": 0.00005,
+  "temporal_step": 1e-06,
   "time_horizon": 2.0,
   "boundary_conditions": "Periodic",
   "parameter_values": {
-    "nu": 0.001
+    "nu": 1.0
   },
-  "notes": "Use 1024 interior spatial points. The domain is $x \\in [0,1]$ with $dx \\approx 9.765625 \\times 10^{-4}$. Time horizon is $T=2.0$ with $dt < 1.0 \\times 10^{-4}$. Use periodic boundary conditions."
+  "notes": "Temporal step adjusted for stability. The original temporal_step (5e-05) was too large for the explicit diffusive CFL condition. The new temporal_step (1.0e-06) satisfies the stability criteria for the given spatial step and diffusion coefficient."
 }
